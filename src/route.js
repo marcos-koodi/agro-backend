@@ -17,6 +17,12 @@ route.post('/docsEtapas', UserController.docsEtapas);
 route.post('/docVisita', UserController.docVisita);
 route.post('/docLaudo', UserController.docLaudo);
 route.post('/seusPlanos', UserController.seusPlanos);
+route.post('/listaEndereco', UserController.listaEndereco);
+route.post('/addEndereco', UserController.addEndereco);
+route.post('/deleteEndereco', UserController.deleteEndereco);
+route.post('/meusDocumentos', UserController.meusDocumentos);
+route.post('/updateTell', UserController.updateTell);
+
 
 
 route.get('/usuario', UserController.index);

@@ -84,6 +84,7 @@ module.exports = {
             }
         });
     },
+
     async listaDocsCli(req, res){
         const token = req.headers['x-access-token'];
         const {id_cliente_servico} = req.body;
@@ -184,6 +185,7 @@ module.exports = {
             };
         });
     },
+
     async listDocPropriedade(req, res){
         const token = req.headers['x-access-token'];
         const {id_cliente_servico} = req.body;
@@ -302,6 +304,7 @@ module.exports = {
             };
         });
     },
+
     async docLaudo(req, res){
         const token = req.headers['x-access-token'];
 
@@ -338,6 +341,7 @@ module.exports = {
             };
         });
     },
+
     async docVisita(req,res){
         const token = req.headers['x-access-token'];
 
@@ -364,6 +368,7 @@ module.exports = {
             };
         });
     },
+
     async isCpf(req, res){
         const {cpf } = req.body;
         const token = req.headers['x-access-token'];
@@ -383,6 +388,79 @@ module.exports = {
             }
         });
     },
+
+    async addEndereco(req, res){
+        const {id, id_cliente, titulo, endereco, numero, bairro, cidade, estado, cep } = req.body;
+        
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                var response = null;
+                var msg;
+                if(id || id != null){
+                    //ALTERAR endereco
+                    response = await knex('enderecos_cliente').
+                    update({titulo, endereco, numero, bairro, cidade, estado, cep})
+                    .where('id', '=', id);
+                    msg = " altera";
+                }else{
+                    // NOVO endereço
+                    response = await knex('enderecos_cliente')
+                    .insert({id_cliente, titulo, endereco, numero, bairro, cidade, estado, cep})
+                    .returning('id');
+                    msg = " cadastra";
+                }
+                console.log("Res end: ", response);
+                // if(response.length > 0){
+                    return res.json({data:response, status: 200,message:"Endereço"+msg+"do com sucesso"});
+                // }else{
+                //     return res.json({data:response, status: 540,message:"Não foi possivel"+msg+"r o endereço."});
+                // }
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel cadatrar o endereço"});
+            }
+        });
+    },
+
+    async listaEndereco(req, res){
+        const {id_cliente} = req.body;
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                const response = await knex.select('*').from('enderecos_cliente').where('id_cliente', id_cliente);
+                if(response.length > 0){
+                    return res.json({data:response, status: 200,message:"Carregando Endereço"});
+                }else{
+                    return res.json({data:response, status: 540,message:"Não possui endereço."});
+                }
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel carregar os endereços"});
+            }
+        });
+    },
+    
+    async deleteEndereco(req, res){
+        const {id} = req.body;
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                const response = await knex('enderecos_cliente').delete().where('id', '=', id)
+                return res.json({data:response, status: 200,message:"Deletado com sucesso!"});
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel deletar o endereço"});            
+            }
+        });
+    },
+
     async cadServico(req, res){
         const { id_cliente, herdeiro_1, herdeiro_2, id_servico} = req.body;
         const token = req.headers['x-access-token'];
@@ -392,10 +470,14 @@ module.exports = {
             if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             
             const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico}).returning('id');
-
+// VALIDAR resEtapas
             const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
-            for(i =1; i <= resEtapas.length; i++ ){
+            for(i = 1; i <= resEtapas.length; i++ ){
                 console.log(i);
+                // var status = 0;
+                // if(i == 1){
+                //     status = 1
+                // }
                 var etapa = i;
                 var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa});
             }
@@ -406,9 +488,10 @@ module.exports = {
             }else{
                 console.log("Error ao cadastrar");
                 return res.send({message: 'Erro ao cadastrar...',status:400, data: error});
-            }          
+            }
         });
     },
+
     async listEtapa(req, res){
         const { id_cliente_servico } = req.body;
         const token = req.headers['x-access-token'];
@@ -444,7 +527,7 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const response = await knex.select('cs.id as id_cliente_servico', 'cs.id_servico AS id_servico', 'cs.herdeiro_1',
+                var response = await knex.select('cs.id as id_cliente_servico', 'cs.id_servico AS id_servico', 'cs.herdeiro_1',
                     'cs.herdeiro_2', 's.nome AS nome_servico', 'cs.data_cad', 'cse.etapa', 'cse.status')
                     .from('cliente_servico AS cs')
                     .innerJoin('cliente_servico_etapa as cse', 'cs.id', 'cse.id_cliente_servico')
@@ -455,7 +538,12 @@ module.exports = {
                     // .where('cse.status',1, OR, 'cse.status', 0)
                     .where('cs.id_cliente', id_cliente)
                     .groupBy('cse.id_cliente_servico');
+                    // console.log(response);
                 if(response.length > 0){
+                    await response.forEach((item) => {
+                        let dt = new Date(item.data_cad)
+                        item.data_cad = dt.toLocaleDateString();
+                      });
                     return res.json({data:response, status: 200,message:"Carregando os planos"});
                 }else{
                     return res.json({data:response, status: 540,message:"Sem planos em andamento"});
@@ -465,30 +553,7 @@ module.exports = {
             }
         });
     },
-    // SELCT "seus planos"
-    // SELECT
-        // cs.id as id_cliente_servico,
-        // cs.id_servico AS id_servico,
-        // cs.herdeiro_1,
-        // cs.herdeiro_2,
-        // s.nome AS nome_servico,
-        // cs.data_cad,
-        // cse.etapa,
-        // cse.status
-    // FROM 
-    //     cliente_servico AS cs
-    // INNER JOIN 
-    //     cliente_servico_etapa as cse
-    //     ON cs.id = cse.id_cliente_servico
-    // INNER JOIN 
-    //      servicos AS s
-    //     ON cs.id_servico = s.id
-    // WHERE (cse.status = 1 OR cse.status = 0)
-    //     AND cs.id_cliente=$id_cliente_aberto
-    //     GROUP BY
-    //         cse.id_cliente_servico
 
-    
     async cadDocCliente(req, res){
         const { id_cliente, tipo_doc, documento, tipo, id_cliente_servico, etapa } = req.body;
 
@@ -517,6 +582,69 @@ module.exports = {
                     console.log("Error ao cadastrar doc");
                     return res.send({message: 'Erro ao cadastrar documentos_cliente...',status:400, data: error});
                 }
+            }
+        });
+    },
+
+    async meusDocumentos(req, res){
+        const token = req.headers['x-access-token'];
+        const {id_cliente} = req.body;
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                var res_doc_cliente = await knex.select('dc.id','dc.tipo_doc','td.nome','td.tipo', 'td.setor')
+                .from('documentos_cliente AS dc')
+                .innerJoin('tipo_documento AS td','td.id','dc.tipo_doc')
+                .where('id_cliente', id_cliente);
+
+                var res_doc_cli_servico = await knex.select('dcse.id','dcse.tipo_doc','td.nome','td.tipo', 'td.setor')
+                .from('documentos_cliente_servico_etapa AS dcse')
+                .innerJoin('tipo_documento AS td','td.id','dcse.tipo_doc')
+                .where('id_cliente', id_cliente);
+
+                await res_doc_cli_servico.forEach((item)=>{
+                    res_doc_cliente.push(item);
+                });
+
+                res_doc_cliente.forEach(element => {
+                    element.nome= element.nome.toLowerCase().replace(/(?:^|\s)\S/g, function(a) {
+                        return a.toUpperCase();
+                      });
+                      
+                    element.nome = element.nome.normalize("NFD").replace(/[^a-zA-Zs]/g, "");
+                    element.nome = element.nome + ".pdf"
+                });
+                
+                return res.json(res_doc_cliente);
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel carregar os documentos peossoais"});
+            };
+        });
+    },
+
+    async updateTell(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_cliente, contato, numero } = req.body;
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                if(contato == "tel"){
+                    const response = await knex('user_cliente')
+                    .update('telefone', numero).where('id', '=', id_cliente);
+                    return res.json("Telefone alterado com sucesso!")
+                }else if(contato == "cel"){
+                    const response = await knex('user_cliente')
+                    .update('celular', numero).where('id', '=', id_cliente);
+                    return res.json("Clular alterado com sucesso!")
+
+                }
+                
+            } catch (error) {
+                return res.send("Não foi possivel alterar o contato.");
             }
         });
     },
