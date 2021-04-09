@@ -70,13 +70,22 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 const response = await knex.select('*').from('consorcios').where('status', 1);
-
                 
+                for(let i = 0; i < response.length ; i++){
+                    const base64 = String.fromCharCode.apply(null, new Uint16Array(response[i].icone));
+                    response[i]['icone'] = base64;
 
-                // for(let i = 0; i < response.length ; i++){
-                //     var base64data = Buffer.from(response[i].icone, 'blob').toString('base64');
-                //     response[i]['icone'] = base64data;
-                // }
+                    try {
+                        let imagem = new Uint8Array(response[i].imagem).reduce(function (data, byte) {
+                            return data + String.fromCharCode(byte);
+                        }, '');
+
+                        response[i]['imagem'] = imagem;
+                    } catch (error) {
+                        console.log(error)
+                    }
+
+                }
 
                return res.json({data:response, status: 200,message:"Carregando consórcios"});
             } catch (error) {
@@ -342,6 +351,37 @@ module.exports = {
         });
     },
 
+    async downloadArquivos(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_doc, tabela_doc } = req.body;
+        console.log("Vem terminar a função!!!");
+
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                const response = await knex.select('*').from(tabela_doc)
+                .where('id', id_doc);
+
+                var arquivo = "";
+                if(tabela_doc == "cliente_servico_etapa"){
+                    arquivo = new Uint8Array(response[0]['doc_admin']).reduce(function (data, byte) {
+                        return data + String.fromCharCode(byte);
+                    }, '');
+                }else if(tabela_doc == "documentos_cliente_servico_etapa"){
+                    arquivo = new Uint8Array(response[0]['documento']).reduce(function (data, byte) {
+                        return data + String.fromCharCode(byte);
+                    }, '');
+                }
+ 
+                return res.json(arquivo);
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel gerar o documento."});
+            };
+        });
+    },
+
     async docVisita(req,res){
         const token = req.headers['x-access-token'];
 
@@ -377,14 +417,40 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const response = await knex.select('id', 'cpf').from('user_cliente').where('cpf', cpf).where('status', 1);
+                const response = await knex.select('id', 'cpf', 'avatar').from('user_cliente').where('cpf', cpf).where('status', 1);
                 if(response.length > 0){
+                    
+                    let avatar = new Uint8Array(response[0].avatar).reduce(function (data, byte) {
+                        return data + String.fromCharCode(byte);
+                    }, '');
+                    response[0]['avatar'] = avatar;
+                    
                     return res.json({data:response, status: 200,message:"Carregando CPF"});
                 }else{
                     return res.json({data:response, status: 540,message:"CPF do usuário em análise."});
                 }
             } catch (error) {
                 return res.json({data:error, status: 400,message:"Não foi possivel carregar os cpf"});
+            }
+        });
+    },
+
+    async getAvatar(req, res){
+        const {id_cliente } = req.body;
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                const response = await knex.select('avatar').from('user_cliente').where('id', id_cliente);
+                let avatar = new Uint8Array(response[0].avatar).reduce(function (data, byte) {
+                    return data + String.fromCharCode(byte);
+                }, '');
+                response[0]['avatar'] = avatar;
+                return res.json({data:response, status:200, message:"Carregando foto."});
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel carregando foto."});
             }
         });
     },
@@ -468,27 +534,41 @@ module.exports = {
 
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
             if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
-            
-            const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico}).returning('id');
-// VALIDAR resEtapas
-            const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
-            for(i = 1; i <= resEtapas.length; i++ ){
-                console.log(i);
-                // var status = 0;
-                // if(i == 1){
-                //     status = 1
-                // }
-                var etapa = i;
-                var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa});
-            }
+            // VALIDAR resEtapas; validado, Está certo?
 
-            if(response.length > 0){
-                console.log("Certo ao cadastrar servico");
-                return res.json({message: 'Serviço cadastrado com sucesso!', status:200, id_cliente_servico:id_cliente_servico, data: response})
-            }else{
-                console.log("Error ao cadastrar");
-                return res.send({message: 'Erro ao cadastrar...',status:400, data: error});
+            try{
+                const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
+                console.log("resETAPAS: ",resEtapas);
+                if(resEtapas.length > 0){
+                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico}).returning('id');
+                    for(i = 1; i <= resEtapas.length; i++ ){
+                        var status = 0;
+                        if(i == 1){
+                            status = 1
+                        }else{
+                            status = 0;
+                        }
+                        var etapa = i;
+                        var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa});
+                    }
+                    if(response.length > 0){
+                        console.log("Certo ao cadastrar servico");
+                        return res.json({message: 'Serviço cadastrado com sucesso!', status:200, id_cliente_servico:id_cliente_servico, data: response})
+                    }else{
+                        console.log("Error ao cadastrar");
+                        return res.json({message: 'Erro ao cadastrar...',status:400, data: error});
+                    }
+                }else{
+                    console.log("Error ao cadastrar");
+                    return res.json({message: 'Erro ao cadastrar servico, etapas não estabelecidas...',status:400, data: error});
+                }
+            }catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel cadastrar servico"});            
             }
+            
+            
+
+            
         });
     },
 
@@ -649,6 +729,11 @@ module.exports = {
         });
     },
 
+
+
+
+
+    //Funcoes teste
     async update(req, res){
         const {id, nome, usuario,senha,email, cpf, cnpj, telefone, celular, avatar, status} = req.body;
         try {
