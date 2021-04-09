@@ -353,7 +353,7 @@ module.exports = {
 
     async downloadArquivos(req, res){
         const token = req.headers['x-access-token'];
-        const { id_doc, tabela_doc } = req.body;
+        const { id_doc, tipo, tabela_doc } = req.body;
         console.log("Vem terminar a função!!!");
 
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
@@ -361,20 +361,33 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const response = await knex.select('*').from(tabela_doc)
-                .where('id', id_doc);
-
+                // const response = await knex.select('*').from(tabela_doc)
+                // .where('id', id_doc);
                 var arquivo = "";
                 if(tabela_doc == "cliente_servico_etapa"){
-                    arquivo = new Uint8Array(response[0]['doc_admin']).reduce(function (data, byte) {
-                        return data + String.fromCharCode(byte);
-                    }, '');
-                }else if(tabela_doc == "documentos_cliente_servico_etapa"){
-                    arquivo = new Uint8Array(response[0]['documento']).reduce(function (data, byte) {
-                        return data + String.fromCharCode(byte);
-                    }, '');
+                    const response = await knex.select('*').from(cliente_servico_etapa)
+                    .where('id', id_doc);
+
+                    arquivo = response[0]['doc_admin'];
+                }else{ 
+                    // tabela_doc == "documentos_cliente_servico_etapa"
+                    if(tipo == 1){
+                        const response = await knex.select('*').from('documentos_cliente')
+                        .where('id', id_doc);
+                        // arquivo = new Uint8Array(response[0]['documento']).reduce(function (data, byte) {
+                        //     return data + String.fromCharCode(byte);
+                        // }, '');
+                        arquivo = response[0]['documento'];
+                    }else if(tipo == 0){
+                        // documentos_cliente_servico_etapa
+                        const response = await knex.select('*').from('documentos_cliente_servico_etapa')
+                        .where('id', id_doc);
+                        arquivo = response[0]['documento'];
+                    }
                 }
- 
+                arquivo = new Uint8Array(arquivo).reduce(function (data, byte) {
+                    return data + String.fromCharCode(byte);
+                }, '');
                 return res.json(arquivo);
             } catch (error) {
                 return res.json({data:error, status: 400,message:"Não foi possivel gerar o documento."});
@@ -538,9 +551,9 @@ module.exports = {
 
             try{
                 const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
-                console.log("resETAPAS: ",resEtapas);
                 if(resEtapas.length > 0){
-                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico}).returning('id');
+                    let data_cad = new Date();
+                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, data_cad}).returning('id');
                     for(i = 1; i <= resEtapas.length; i++ ){
                         var status = 0;
                         if(i == 1){
@@ -549,7 +562,7 @@ module.exports = {
                             status = 0;
                         }
                         var etapa = i;
-                        var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa});
+                        var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa, status});
                     }
                     if(response.length > 0){
                         console.log("Certo ao cadastrar servico");
@@ -642,8 +655,9 @@ module.exports = {
 
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
             if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            let data_cad = new Date();
             if(tipo ==1){
-                const response = await knex('documentos_cliente').insert({id_cliente, tipo_doc, documento});
+                const response = await knex('documentos_cliente').insert({id_cliente, tipo_doc, documento, data_cad});
                 if(response.length > 0){
                     console.log("Doc Cadastrado .");
                     return res.json({message: 'documentos_cliente cadastrado com sucesso.', status:200, data: response})
@@ -654,7 +668,7 @@ module.exports = {
             }else{
                 const id_cliente_servico_etapa = await knex('cliente_servico_etapa').select('id').where('id_cliente_servico', id_cliente_servico).where('etapa', etapa);
                 console.log("id_cliente_servico_etapa", id_cliente_servico_etapa[0]);
-                const response = await knex('documentos_cliente_servico_etapa').insert({id_cliente, tipo_doc, documento, id_cliente_servico_etapa:id_cliente_servico_etapa[0]['id']});
+                const response = await knex('documentos_cliente_servico_etapa').insert({id_cliente, tipo_doc, documento, id_cliente_servico_etapa:id_cliente_servico_etapa[0]['id'], data_cad});
                 if(response.length > 0){
                     console.log("Doc Cadastrado.");
                     return res.json({message: 'documentos_cliente cadastrado com sucesso.', status:200, data: response})

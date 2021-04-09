@@ -28,16 +28,16 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
           
           // se tudo estiver ok, salva no request para uso posterior
-          const response = await knex.select('id').from('user_cliente').where('usuario', usuario).where('status', 1);
+          const res_id_cli = await knex.select('id').from('user_cliente').where('usuario', usuario);
 
-          if(response.length > 0){
+          if(res_id_cli.length > 0){
             const response = await knex.select('id', 'nome', 'email','cpf', 'cnpj', 'telefone','celular')
             .from('user_cliente').where('usuario', usuario).where('senha', senha).where('status', 1);
             if(response.length > 0){
 
                 return res.json({message:'Bem vindo.', status:200, data:response})
             }else{
-                return res.json({message:'Senha invalida.', status:500})
+                return res.json({message:'Usuario ou senha invalido.', status:500})
             }
           }else{
             return res.json({message:'Usuario não cadastrado.', status: 500})
