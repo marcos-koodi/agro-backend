@@ -773,9 +773,22 @@ module.exports = {
             }
         });
     },
+    async updateAvatar(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_cliente, avatar } = req.body;
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 
-
-
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                const response = await knex('user_cliente')
+                .update('avatar', avatar).where('id', '=', id_cliente);
+                return res.json("Avatar alterado com sucesso!");
+            } catch (error) {
+                return res.send("Não foi possivel alterar o avatar.");
+            }
+        });
+    },
 
 
     //Funcoes teste
