@@ -667,6 +667,8 @@ module.exports = {
     async cadDocCliente(req, res){
         const { id_cliente, tipo_doc, documento, tipo, id_cliente_servico, etapa } = req.body;
 
+        console.log(req.body);
+        
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 
