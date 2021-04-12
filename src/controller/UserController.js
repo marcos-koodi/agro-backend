@@ -94,6 +94,48 @@ module.exports = {
         });
     },
 
+    async getSlider(req, res){
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                var slider = [];
+                const response = await knex.select('*').from('slider_principal');
+                if(response.length > 0){
+                    if(response[0]['img_1'] !== null && response[0]['img_1']){
+                        convertB64(response[0]['img_1']);
+                    }
+                    if(response[0]['img_2'] !== null && response[0]['img_2']){
+                        convertB64(response[0]['img_2']);
+                    }
+                    if(response[0]['img_3'] !== null && response[0]['img_3']){
+                        convertB64(response[0]['img_3']);
+                    }
+                    function convertB64(img) {
+                        try {
+                            let imagem = new Uint8Array(img).reduce(function (data, byte) {
+                                return data + String.fromCharCode(byte);
+                            }, '');
+                            slider.push(imagem);
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    }
+
+                    return res.json({data:slider, status: 200,message:"Carregando slides"});
+                }else{
+                    return res.json({data:response, status: 500,message:"Não tem slides disponiveis."});
+                }
+
+
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel carregar os slides"});
+            }
+        });
+    },
+
     async listaDocsCli(req, res){
         const token = req.headers['x-access-token'];
         const {id_cliente_servico} = req.body;
@@ -668,7 +710,7 @@ module.exports = {
         const { id_cliente, tipo_doc, documento, tipo, id_cliente_servico, etapa } = req.body;
 
         console.log(req.body);
-        
+
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 

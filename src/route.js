@@ -7,6 +7,7 @@ route.post('/token', AuthController.token);
 route.post('/login', AuthController.login);
 route.post('/cadastro', UserController.create);
 route.post('/getConsorcios', UserController.getConsorcios);
+route.post('/getSlider', UserController.getSlider);
 route.post('/isCpf', UserController.isCpf);
 route.post('/listaDocs', UserController.listaDocsCli);
 route.post('/cadServico', UserController.cadServico);
@@ -25,6 +26,7 @@ route.post('/updateTell', UserController.updateTell);
 route.post('/getAvatar', UserController.getAvatar);
 route.post('/downloadArquivos', UserController.downloadArquivos);
 route.post('/updateAvatar', UserController.updateAvatar);
+
 
 
 
