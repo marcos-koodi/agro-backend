@@ -611,7 +611,7 @@ module.exports = {
             try{
                 const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
                 if(resEtapas.length > 0){
-                    let data_cad = new Date().toLocaleDateString('pt-br');
+                    let data_cad = new Date();
                     const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, data_cad}).returning('id');
                     for(i = 1; i <= resEtapas.length; i++ ){
                         var status = 0;
@@ -716,7 +716,7 @@ module.exports = {
 
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
             if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
-            let data_cad = new Date().toLocaleDateString('pt-br');
+            let data_cad = new Date();
             if(tipo == 1){
                 const response = await knex('documentos_cliente').insert({id_cliente, tipo_doc, documento, data_cad});
                 if(response.length > 0){
