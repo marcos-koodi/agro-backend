@@ -645,8 +645,8 @@ module.exports = {
                     // console.log(response);
                 if(response.length > 0){
                     await response.forEach((item) => {
-                        let dt = new Date(item.data_cad)
-                        item.data_cad = dt.toLocaleDateString();
+                        let dt = new Date(item.data_cad);
+                        item.data_cad = dt.toLocaleDateString('pt-br');
                       });
                     return res.json({data:response, status: 200,message:"Carregando os planos"});
                 }else{
@@ -706,8 +706,8 @@ module.exports = {
 
                 await res_doc_cliente.forEach((item) => {
                     if(item.data_cad){
-                        let dt = new Date(item.data_cad)
-                        item.data_cad = dt.toLocaleDateString();    
+                        let dt = new Date(item.data_cad);
+                        item.data_cad = dt.toLocaleDateString('pt-br');
                     }
                 });
 
@@ -721,8 +721,8 @@ module.exports = {
 
                 await res_doc_cli_servico.forEach((item)=>{
                     if(item.data_cad){
-                        let dt = new Date(item.data_cad)
-                        item.data_cad = dt.toLocaleDateString();    
+                        let dt = new Date(item.data_cad);
+                        item.data_cad = dt.toLocaleDateString('pt-br');    
                     }
                     res_doc_cliente.push(item);
                 });
