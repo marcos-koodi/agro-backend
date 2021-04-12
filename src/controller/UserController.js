@@ -352,6 +352,7 @@ module.exports = {
                     laudo ={
                         "status":1,
                         "id_cliente_servico_etapa":resId_cliente_servico_etapa[0]['id'],
+                        // "tipo":2
                     };
                 }
  
@@ -374,12 +375,17 @@ module.exports = {
             try {
                 // const response = await knex.select('*').from(tabela_doc)
                 // .where('id', id_doc);
-                var arquivo = "";
+                let arquivo = "";
                 if(tabela_doc == "cliente_servico_etapa"){
-                    const response = await knex.select('*').from(cliente_servico_etapa)
+                    console.log("TABELA: cliente_servico_etapa");
+                    const response = await knex.select('*').from('cliente_servico_etapa')
                     .where('id', id_doc);
 
                     arquivo = response[0]['doc_admin'];
+                    console.log("response: ", response);
+
+                    console.log("arq: ", arquivo);
+
                 }else{ 
                     // tabela_doc == "documentos_cliente_servico_etapa"
                     if(tipo == 1){
