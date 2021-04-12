@@ -699,17 +699,31 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                var res_doc_cliente = await knex.select('dc.id','dc.tipo_doc','td.nome','td.tipo', 'td.setor')
+                var res_doc_cliente = await knex.select('dc.id','dc.tipo_doc', 'dc.data_cad','td.nome','td.tipo', 'td.setor')
                 .from('documentos_cliente AS dc')
                 .innerJoin('tipo_documento AS td','td.id','dc.tipo_doc')
                 .where('id_cliente', id_cliente);
 
-                var res_doc_cli_servico = await knex.select('dcse.id','dcse.tipo_doc','td.nome','td.tipo', 'td.setor')
+                await res_doc_cliente.forEach((item) => {
+                    if(item.data_cad){
+                        let dt = new Date(item.data_cad)
+                        item.data_cad = dt.toLocaleDateString();    
+                    }
+                });
+
+                var res_doc_cli_servico = await knex.select('dcse.id','dcse.tipo_doc','dcse.data_cad','td.nome','td.tipo', 'td.setor')
                 .from('documentos_cliente_servico_etapa AS dcse')
                 .innerJoin('tipo_documento AS td','td.id','dcse.tipo_doc')
                 .where('id_cliente', id_cliente);
+                // await res_doc_cliente.forEach((item) => {
+                    
+                // });
 
                 await res_doc_cli_servico.forEach((item)=>{
+                    if(item.data_cad){
+                        let dt = new Date(item.data_cad)
+                        item.data_cad = dt.toLocaleDateString();    
+                    }
                     res_doc_cliente.push(item);
                 });
 
