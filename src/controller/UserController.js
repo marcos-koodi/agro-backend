@@ -119,7 +119,18 @@ module.exports = {
 
                 };
                 async function getListDocs(id, id_cliente_servico) {
-                    temp = await knex.select('id','nome' ).from('user_cliente').where('id', id);
+                    temp = await knex.select('id','nome','avatar').from('user_cliente').where('id', id);
+                    try {
+                        let avatar = new Uint8Array(temp[0].avatar).reduce(function (data, byte) {
+                            return data + String.fromCharCode(byte);
+                        }, '');
+
+                        temp[0]['avatar'] = avatar;
+                    } catch (error) {
+                        console.log(error);
+                        temp[0]['avatar'] = null;
+                    }
+
                     resDataHerdeiros.push(temp[0]);
 
                     // const lista = await knex.select('td.id AS id_doc','td.tipo','td.nome AS nome_doc').from('documentos_etapa AS de')
