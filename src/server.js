@@ -5,8 +5,6 @@ const cors = require('cors');
 const app = express();
 
 app.use(express.json());
-app.use(bodyParser.json({limit: '50mb'}));
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }))
 
 const allowedOrigins = [
     'capacitor://localhost',
@@ -32,6 +30,10 @@ origin: (origin, callback) => {
 app.options('', cors(corsOptions));
 
 app.use(cors());
+
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
+
 app.use(route);
 
 app.listen(process.env.PORT  || 3000,()=>
