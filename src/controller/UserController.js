@@ -464,7 +464,7 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const resId_cliente_servico = await knex.select('id').from('cliente_servico').where('id', id_cliente_servico);
+                const resId_cliente_servico = await knex.select('id','id_servico').from('cliente_servico').where('id', id_cliente_servico);
  
                 // documentos_cliente_servico_etapa AS docsEtp
                 const listDocPropriedade = await knex.select('visita.data','visita.horario', 'visita.endereco', 'visita.status')
@@ -472,6 +472,7 @@ module.exports = {
                 .innerJoin('cliente_servico_etapa AS cse', 'visita.id_cliente_servico_etapa', 'cse.id')
                 .where('cse.id_cliente_servico',resId_cliente_servico[0]['id'])
                 .where('cse.etapa', 3);
+                listDocPropriedade[0].id_servico = resId_cliente_servico[0]['id_servico'];
 
 
                 return res.json(listDocPropriedade);
