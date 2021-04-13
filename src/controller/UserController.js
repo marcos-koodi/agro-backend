@@ -472,7 +472,7 @@ module.exports = {
                 .innerJoin('cliente_servico_etapa AS cse', 'visita.id_cliente_servico_etapa', 'cse.id')
                 .where('cse.id_cliente_servico',resId_cliente_servico[0]['id'])
                 .where('cse.etapa', 3);
-                listDocPropriedade[0].servico = resId_cliente_servico[0]['id_servico'];
+                listDocPropriedade[0].id_servico = resId_cliente_servico[0]['id_servico'];
 
 
                 return res.json(listDocPropriedade);
