@@ -256,12 +256,15 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const resId_cliente_servico = await knex.select('id' ).from('cliente_servico').where('id', id_cliente_servico);
-                const resId_cliente_servico_etapa = await knex.select('id').from('cliente_servico_etapa').where('id_cliente_servico', resId_cliente_servico[0]['id'])
+                // const resId_cliente_servico = await knex.select('id' ).from('cliente_servico').where('id', id_cliente_servico);
+                // const resId_cliente_servico_etapa = await knex.select('id').from('cliente_servico_etapa').where('id_cliente_servico', resId_cliente_servico[0]['id']).where('etapa', 1);
+                
+                const resId_cliente_servico_etapa = await knex.select('id').from('cliente_servico_etapa')
+                .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', 1);
 
                 // id`, `id_cliente`, `id_cliente_servico_etapa`, `tipo_doc`, `documento`, `status`
-                console.log("resId_cliente_servico: ", resId_cliente_servico);
+                // console.log("resId_cliente_servico: ", resId_cliente_servico);
                 console.log("resId_cliente_servico_etapa: ", resId_cliente_servico_etapa);
                 
                 // status, tipo_doc, nome, setor, 
@@ -307,60 +310,122 @@ module.exports = {
             };
         });
     },
-    async docsEtapas(req,res){
+    async dadosProcessoEtapa(req,res){
         const token = req.headers['x-access-token'];
 
-        const {id_cliente_servico, etapa} = req.body;
+        const {id_cliente_servico, etapa, id_etapa} = req.body;
 
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const resId_cliente_servico = await knex.select('id').from('cliente_servico').where('id', id_cliente_servico);
-                const resId_cliente_servico_etapa = await knex.select('id').from('cliente_servico_etapa').where('id_cliente_servico', resId_cliente_servico[0]['id'])
+                // const resId_cliente_servico = await knex.select('id').from('cliente_servico').where('id', id_cliente_servico);
+                const res_cliente_servico_etapa = await knex.select('adicional', 'status_processo_interno').from('cliente_servico_etapa')
+                .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', etapa);
 
-                // var doc = await knex.select('*').from('cliente_servico_etapa AS csa').where()
-                // console.log("resId_cliente_servico: ", resId_cliente_servico);
-                // console.log("resId_cliente_servico_etapa: ", resId_cliente_servico_etapa);
-                // documentos_cliente_servico_etapa
-                const listDocPropriedade = await knex.select('docsEtp.id AS id_doc_cse','docsEtp.status', 'docsEtp.tipo_doc', 'tpDoc.nome','tpDoc.setor', 'tpDoc.tipo', 'docsEtp.id_cliente_servico_etapa')
-                .from('documentos_cliente_servico_etapa AS docsEtp')
-                .innerJoin('tipo_documento AS tpDoc', 'tpDoc.id', 'docsEtp.tipo_doc')
-                // .innerJoin('cliente_servico_etapa AS cse','docsEtp.id_cliente_servico_etapa','cse.id')
-                .where('docsEtp.id_cliente_servico_etapa',resId_cliente_servico_etapa[0]['id']);
+                var processoEtapa = {
+                    "id_cliente_servico": id_cliente_servico,
+                    // "status": 0,
+                    "etapa": etapa,
+                    "id_etapa": id_etapa,
+                    "status_processo_interno":res_cliente_servico_etapa[0]['status_processo_interno'],
+                    "adicional":res_cliente_servico_etapa[0]['adicional'],
+                    "id_cliente_servico_etapa": null,
 
-                let id_docs_send = listDocPropriedade.map((item) =>{
-                    return item.tipo_doc
-                });
-                
-                const docPropriedade = await knex.select('td.id AS id_doc','td.tipo', 'td.nome AS nome_doc','td.setor')
-                .from('documentos_etapa AS de')
-                .innerJoin('tipo_documento AS td', 'td.id','de.id_documento')
-                .where('de.id_etapa', etapa)
-                .whereNotIn('td.id', id_docs_send);
-                // .where('td.setor', 'Propriedade');
+                    "documento":{
+                        "id_doc_cse":null, //id do documento do cliente
+                        "status":null,
+                        "tipo_doc": null, //id_doc
+                        "nome": null,
+                        "setor": null,
+                        "tipo": null,
+                    }
+                };
 
-                
-                let tp_listaProp =[];
-                await docPropriedade.forEach((item)=>{
-                    tp_listaProp.push({
-                        "status": 0,
-                        "tipo_doc": item.id_doc,
-                        "nome": item.nome_doc,
-                        "setor": item.setor,
-                        "tipo": item.tipo,
-                        "id_cliente_servico_etapa": resId_cliente_servico_etapa[0]['id'],
-                        // "doc_admin": resId_cliente_servico_etapa[0]['doc_admin']
+                //Retorna o ID da tabela "cliente_servico_etapa" referente a ETAPA.:
+                const resId_cliente_servico_etapa = await knex.select('id')
+                .from('cliente_servico_etapa')
+                .where('id_cliente_servico', id_cliente_servico)
+                .where('etapa', etapa);
+
+                processoEtapa.id_cliente_servico_etapa = resId_cliente_servico_etapa[0]['id'];
+
+                var listDocPropriedade="";
+                var docPropriedade=""
+
+                /**verifica se a Etapa Requer Documento 
+                        Etapas que REQUER DOCUMENTO : 2, 5, 10, 11*/
+                if(id_etapa == 2 || id_etapa == 5 || id_etapa == 10 || id_etapa == 11){
+
+                    // Verifica e Retorna o stts do(s) Doc(s) da Etapa já anexados.:
+                    listDocPropriedade = await knex.select(
+                    'docsEtp.id AS id_doc_cse','docsEtp.status', 'docsEtp.tipo_doc', 'docsEtp.id_cliente_servico_etapa', /*TB documentos_cliente_servico_etapa*/
+                    'tpDoc.nome','tpDoc.setor', 'tpDoc.tipo') /*TB tipo_documento*/
+                    .from('documentos_cliente_servico_etapa AS docsEtp')
+                    .innerJoin('tipo_documento AS tpDoc', 'tpDoc.id', 'docsEtp.tipo_doc')
+                    // .innerJoin('cliente_servico_etapa AS cse','docsEtp.id_cliente_servico_etapa','cse.id')
+                    .where('docsEtp.id_cliente_servico_etapa',resId_cliente_servico_etapa[0]['id']);
+                            /**Retorna ==> {
+                                    "id_doc_cse": 2,
+                                    "status": 1,
+                                    "tipo_doc": "29",
+                                    "nome": "Cédula Reconhecida",
+                                    "setor": "Cédula",
+                                    "tipo": 2,
+                                    "id_cliente_servico_etapa": 10
+                                }*/
+
+
+                    // Retorno os IDs do(s) Doc(s) já anexados.:
+                    let id_docs_send = listDocPropriedade.map((item) =>{
+                        return item.tipo_doc
                     });
-                });
+                    console.log("id_docs_send: ", id_docs_send);
 
-                listDocPropriedade.forEach((value)=>{
-                    tp_listaProp.push(value);
-                });
+                    //Retorna as Informaçoes do(s) Doc(s) da Etapa.:
+                    docPropriedade = await knex.select('td.id AS id_doc','td.tipo', 'td.nome AS nome_doc','td.setor')
+                    .from('documentos_etapa AS de')
+                    .innerJoin('tipo_documento AS td', 'td.id','de.id_documento')
+                    .where('de.id_etapa', id_etapa)
+                    .whereNotIn('td.id', id_docs_send);
+                    // .where('td.setor', 'etapa');
+                        /**Retorna ==>{
+                            "id_doc": 30,
+                            "tipo": 0,
+                            "nome_doc": "Orçamento Cliente",
+                            "setor": "Orcamento"
+                        } */
 
-                return res.json(tp_listaProp);
+
+                    var tp_listaProp =[];
+                    await docPropriedade.forEach((item)=>{
+                        tp_listaProp.push({
+                            "id_doc_cse":null,
+                            "status": 0,
+                            "tipo_doc": item.id_doc,
+                            "nome": item.nome_doc,
+                            "setor": item.setor,
+                            "tipo": item.tipo,
+                            // "id_cliente_servico_etapa": resId_cliente_servico_etapa[0]['id'],
+                            // "doc_admin": resId_cliente_servico_etapa[0]['doc_admin']
+                        });
+                    });
+
+                    console.log("tp_listaProp: ", tp_listaProp)
+                    listDocPropriedade.forEach(async(value)=>{
+                        await tp_listaProp.push(value);
+                    });
+
+                    console.log("Fim IF")
+                    processoEtapa.documento = tp_listaProp[0];
+                }
+
+
+                return res.json(processoEtapa);
+
+                // return res.json(tp_listaProp); bkp Primeira versão 
             } catch (error) {
                 return res.json({data:error, status: 400,message:"Não foi possivel carregar os documentos da etapa"});
             };
@@ -621,8 +686,8 @@ module.exports = {
                         }else{
                             status = 0;
                         }
-                        var etapa = i;
-                        var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa, status});
+                        // var etapa = i;
+                        var response = await knex('cliente_servico_etapa').insert({id_cliente_servico, etapa:i, status});
                     }
                     if(response.length > 0){
                         console.log("Certo ao cadastrar servico");
@@ -653,7 +718,8 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
             if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
 
-            const response = await knex('cliente_servico AS cs').select('cs.id as id_cliente_servico', 'cse.etapa', 'cse.status as status_etapa', 'e.id as id_etapa', 'e.nome as nome_etapa')
+            const response = await knex('cliente_servico AS cs')
+            .select('cs.id as id_cliente_servico', 'cse.etapa', 'cse.status as status_etapa','cse.adicional', 'cse.status_processo_interno', 'e.id as id_etapa', 'e.nome as nome_etapa')
             .innerJoin('cliente_servico_etapa as cse', 'cs.id', 'cse.id_cliente_servico')
             .innerJoin('servicos AS s', 'cs.id_servico', 's.id')
             .innerJoin('etapa_servico AS es', function() {
@@ -664,7 +730,7 @@ module.exports = {
 
             if(response.length > 0){
                 console.log("Carregando etapas.");
-                return res.json({message: 'Carregando etapas.', status:200, data: response})
+                return res.json({message: 'Carregando etapas.', status:200, data: response});
             }else{
                 console.log("Error ao cadastrar");
                 return res.send({message: 'Erro ao carregar etapas...',status:400, data: error});

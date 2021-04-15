@@ -14,7 +14,7 @@ route.post('/cadServico', UserController.cadServico);
 route.post('/listEtapa', UserController.listEtapa);
 route.post('/cadDocCliente', UserController.cadDocCliente);
 route.post('/listDocPropriedade', UserController.listDocPropriedade);
-route.post('/docsEtapas', UserController.docsEtapas);
+route.post('/dadosProcessoEtapa', UserController.dadosProcessoEtapa);
 route.post('/docVisita', UserController.docVisita);
 route.post('/docLaudo', UserController.docLaudo);
 route.post('/seusPlanos', UserController.seusPlanos);
