@@ -334,7 +334,7 @@ module.exports = {
                     "adicional":res_cliente_servico_etapa[0]['adicional'],
                     "id_cliente_servico_etapa": null,
 
-                    "documento":{
+                    "doc":{
                         "id_doc_cse":null, //id do documento do cliente
                         "status":null,
                         "tipo_doc": null, //id_doc
@@ -419,7 +419,7 @@ module.exports = {
                     });
 
                     console.log("Fim IF")
-                    processoEtapa.documento = tp_listaProp[0];
+                    processoEtapa.doc = tp_listaProp[0];
                 }
 
 
@@ -529,18 +529,17 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const resId_cliente_servico = await knex.select('id','id_servico').from('cliente_servico').where('id', id_cliente_servico);
+                // const resId_cliente_servico = await knex.select('id','id_servico').from('cliente_servico').where('id', id_cliente_servico);
  
                 // documentos_cliente_servico_etapa AS docsEtp
-                const listDocPropriedade = await knex.select('visita.data','visita.horario', 'visita.endereco', 'visita.status')
+                const resVisita = await knex.select('visita.data','visita.horario', 'visita.endereco', 'visita.status', 'visita.id_cliente_servico_etapa')
                 .from('visitas_cliente_servico_etapa AS visita')
                 .innerJoin('cliente_servico_etapa AS cse', 'visita.id_cliente_servico_etapa', 'cse.id')
-                .where('cse.id_cliente_servico',resId_cliente_servico[0]['id'])
+                .where('cse.id_cliente_servico',id_cliente_servico)
                 .where('cse.etapa', 3);
-                listDocPropriedade[0].id_servico = resId_cliente_servico[0]['id_servico'];
+                // resVisita[0].id_servico = resId_cliente_servico[0]['id_servico'];
 
-
-                return res.json(listDocPropriedade);
+                return res.json(resVisita);
             } catch (error) {
                 return res.json({data:error, status: 400,message:"Não foi possivel carregar a visita"});
             };
@@ -719,7 +718,7 @@ module.exports = {
             if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
 
             const response = await knex('cliente_servico AS cs')
-            .select('cs.id as id_cliente_servico', 'cse.etapa', 'cse.status as status_etapa','cse.adicional', 'cse.status_processo_interno', 'e.id as id_etapa', 'e.nome as nome_etapa')
+            .select('cs.id as id_cliente_servico','cs.id_servico', 'cse.etapa', 'cse.status as status_etapa','cse.adicional', 'cse.status_processo_interno', 'e.id as id_etapa', 'e.nome as nome_etapa')
             .innerJoin('cliente_servico_etapa as cse', 'cs.id', 'cse.id_cliente_servico')
             .innerJoin('servicos AS s', 'cs.id_servico', 's.id')
             .innerJoin('etapa_servico AS es', function() {
