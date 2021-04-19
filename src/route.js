@@ -26,6 +26,7 @@ route.post('/updateTell', UserController.updateTell);
 route.post('/getAvatar', UserController.getAvatar);
 route.post('/downloadArquivos', UserController.downloadArquivos);
 route.post('/updateAvatar', UserController.updateAvatar);
+route.post('/orcamentosJBS', UserController.orcamentosJBS);
 
 
 

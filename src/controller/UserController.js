@@ -493,9 +493,19 @@ module.exports = {
 
                     console.log("arq: ", arquivo);
 
-                }else{ 
+                }else if(tabela_doc == "orcamento_cliente_servico_etapa"){
+                    console.log("TABELA: orcamento_cliente_servico_etapa");
+
+                    const res_doc = await knex.select('*').from('orcamento_cliente_servico_etapa')
+                    .where('id', id_doc);
+
+                    arquivo = res_doc[0]['doc'];
+
+                    console.log("arq: ", arquivo);
+                }else{
                     // tabela_doc == "documentos_cliente_servico_etapa"
                     if(tipo == 1){
+                        console.log("Tabela tipo 1");
                         const response = await knex.select('*').from('documentos_cliente')
                         .where('id', id_doc);
                         // arquivo = new Uint8Array(response[0]['documento']).reduce(function (data, byte) {
@@ -503,6 +513,8 @@ module.exports = {
                         // }, '');
                         arquivo = response[0]['documento'];
                     }else if(tipo == 0){
+                        console.log("Tabela tipo 0");
+
                         // documentos_cliente_servico_etapa
                         const response = await knex.select('*').from('documentos_cliente_servico_etapa')
                         .where('id', id_doc);
@@ -883,6 +895,7 @@ module.exports = {
             }
         });
     },
+    
     async updateAvatar(req, res){
         const token = req.headers['x-access-token'];
         const { id_cliente, avatar } = req.body;
@@ -900,6 +913,54 @@ module.exports = {
         });
     },
 
+    async orcamentosJBS(req, res){
+        // const {id_cliente} = req.body;
+        const {id_cliente_servico, etapa, id_etapa} = req.body;
+
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                var response;
+                const res_id_cliente_servico_etapa = await knex.select('id',).from('cliente_servico_etapa')
+                .where('id_cliente_servico', id_cliente_servico)
+                .where('etapa', etapa);
+
+                const res_adicional_cliente_servico_etapa = await knex.select('adicional',).from('cliente_servico_etapa')
+                .where('id_cliente_servico', id_cliente_servico)
+                .where('etapa', 5);
+
+                response = await knex.select('id', 'id_cliente_servico_etapa', 'titulo', 'valor', 'cod_banco', 'agencia', 'conta', 'titular', 'cnpj', 'motivo', 'data_cad')
+                .from('orcamento_cliente_servico_etapa')
+                .where('id_cliente_servico_etapa', res_id_cliente_servico_etapa[0]['id']);
+
+                var aux = res_adicional_cliente_servico_etapa[0]['adicional'];
+                await response.forEach(item => {
+                    valor = Number.parseFloat(item.valor);
+                    aux = aux - valor;
+                });
+
+                await response.forEach((item) => {
+                    let dt = new Date(item.data_cad);
+                    item.data_cad = dt.toLocaleDateString('pt-br');
+                });
+
+                console.log("adicional: ", aux);
+                response[0].orcamento = res_adicional_cliente_servico_etapa[0]['adicional'];
+                response[0].restante = aux;
+
+                if(response.length > 0){
+                    return res.json({data:response, status: 200,message:"Carregando Orçamentos"});
+                }else{
+                    return res.json({data:response, status: 540,message:"Não possui Orçamentos."});
+                }
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel carregar os Orçamentos"});
+            }
+        });
+    },
 
     //Funcoes teste
     async update(req, res){
