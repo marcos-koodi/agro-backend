@@ -1,6 +1,7 @@
 const { response } = require('express');
 const knex = require('../database/index');
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 
 module.exports = {
     async index(req, res){
@@ -321,7 +322,7 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 // const resId_cliente_servico = await knex.select('id').from('cliente_servico').where('id', id_cliente_servico);
-                const res_cliente_servico_etapa = await knex.select('adicional', 'status_processo_interno').from('cliente_servico_etapa')
+                const res_cliente_servico_etapa = await knex.select('id','adicional', 'status_processo_interno').from('cliente_servico_etapa')
                 .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', etapa);
 
@@ -332,25 +333,24 @@ module.exports = {
                     "id_etapa": id_etapa,
                     "status_processo_interno":res_cliente_servico_etapa[0]['status_processo_interno'],
                     "adicional":res_cliente_servico_etapa[0]['adicional'],
-                    "id_cliente_servico_etapa": null,
+                    "id_cliente_servico_etapa": res_cliente_servico_etapa[0]['id'],
 
-                    "doc":{
+                    "doc":[{
                         "id_doc_cse":null, //id do documento do cliente
                         "status":null,
                         "tipo_doc": null, //id_doc
                         "nome": null,
                         "setor": null,
                         "tipo": null,
-                    }
+                    }]
                 };
 
                 //Retorna o ID da tabela "cliente_servico_etapa" referente a ETAPA.:
-                const resId_cliente_servico_etapa = await knex.select('id')
-                .from('cliente_servico_etapa')
-                .where('id_cliente_servico', id_cliente_servico)
-                .where('etapa', etapa);
-
-                processoEtapa.id_cliente_servico_etapa = resId_cliente_servico_etapa[0]['id'];
+                // const resId_cliente_servico_etapa = await knex.select('id')
+                // .from('cliente_servico_etapa')
+                // .where('id_cliente_servico', id_cliente_servico)
+                // .where('etapa', etapa);
+                // processoEtapa.id_cliente_servico_etapa = resId_cliente_servico_etapa[0]['id'];
 
                 var listDocPropriedade="";
                 var docPropriedade=""
@@ -366,7 +366,7 @@ module.exports = {
                     .from('documentos_cliente_servico_etapa AS docsEtp')
                     .innerJoin('tipo_documento AS tpDoc', 'tpDoc.id', 'docsEtp.tipo_doc')
                     // .innerJoin('cliente_servico_etapa AS cse','docsEtp.id_cliente_servico_etapa','cse.id')
-                    .where('docsEtp.id_cliente_servico_etapa',resId_cliente_servico_etapa[0]['id']);
+                    .where('docsEtp.id_cliente_servico_etapa',res_cliente_servico_etapa[0]['id']);
                             /**Retorna ==> {
                                     "id_doc_cse": 2,
                                     "status": 1,
@@ -398,10 +398,10 @@ module.exports = {
                             "setor": "Orcamento"
                         } */
 
-
-                    var tp_listaProp =[];
+                    processoEtapa.doc = [];
+                    // var tp_listaProp =[];
                     await docPropriedade.forEach((item)=>{
-                        tp_listaProp.push({
+                        processoEtapa.doc.push({
                             "id_doc_cse":null,
                             "status": 0,
                             "tipo_doc": item.id_doc,
@@ -413,13 +413,12 @@ module.exports = {
                         });
                     });
 
-                    console.log("tp_listaProp: ", tp_listaProp)
+                    // console.log("tp_listaProp: ", tp_listaProp)
                     listDocPropriedade.forEach(async(value)=>{
-                        await tp_listaProp.push(value);
+                        await processoEtapa.doc.push(value);
                     });
 
-                    console.log("Fim IF")
-                    processoEtapa.doc = tp_listaProp[0];
+                    // processoEtapa.doc = tp_listaProp[0];
                 }
 
 
@@ -715,9 +714,6 @@ module.exports = {
                 return res.json({data:error, status: 400,message:"Não foi possivel cadastrar servico"});            
             }
             
-            
-
-            
         });
     },
 
@@ -961,6 +957,112 @@ module.exports = {
             }
         });
     },
+
+    async recuperacao_senha(req, res){
+        const { email } = req.body;
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+            if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+
+            try{
+                const res_user_cliente_email = await knex('user_cliente').select('email').where('email', email);
+                if(res_user_cliente_email.length > 0){
+
+                    const id = 1; //esse id viria do banco de dados
+                    const token_senha = jwt.sign({ id }, process.env.SECRET, {
+                        expiresIn: 300 // expires in 5min
+                    });
+
+                    let data_cad = new Date();
+                    const response = await knex('recuperacao_senha').insert({ email, data_cad,'token': token_senha}).returning('id');
+
+                    
+                    if(response.length > 0){
+                        console.log("Sucesso recuperação de senha.");
+                        
+                        var transporter = nodemailer.createTransport({
+                            host: 'smtp.hostinger.com.br',
+                            port: 587,
+                            secure: false,
+                            requireTLS: true,
+                            auth: {
+                              user: 'caderno-executivo@evolutionsoft.com.br',
+                              pass: 'Teste123'
+                            }
+                          });
+                          
+                        
+                        let url = 'http://localhost/EvSOFT/otaviocardena-agroempreender-web-46e6cf120b44/agropainelAdmin/reuperarSenha.html?token='+token_senha+'&email='+email;
+                        var mailOptions = {
+                            from: 'caderno-executivo@evolutionsoft.com.br',
+                            to: email,
+                            subject: 'Redefinir Senha - agroempreender',
+                            html: 'Olá prezado.</br>Ouvimos dizer que você esqueceu sua senha. </br>Abaixo segue o link para redefinicao de senha.</br></br><a href="'+url+'">alterar senha</a>'
+                          };
+                          
+                          transporter.sendMail(mailOptions, async function(error, info){
+                            if (error) {
+                                return res.json({response: error})
+                            } else {
+                                return res.json({message: 'Solicitação de senha solicitada com sucesso!', status:200, data: response})
+                               // return res.json({response: 'Enviamos o link de redefinicao de senha em seu email, por favor verifique sua caixa de entrada!!!'});
+                            }
+                          });
+
+                    }else{
+                        console.log("Error ao cadastrar");
+                        return res.json({message: 'Não foi possivel recuperar senha.', status:402});
+                    }
+                }else{
+                    console.log("Error ao cadastrar");
+                    //nao mudar o status
+                    return res.json({message: 'Não foi possivel recuperar senha. Email não cadastrado.', status:401});
+                }
+            }catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel recuperar senha."});            
+            }
+        });
+    },
+
+    async valida_token_recuperacao(req, res){
+        const { token, email } = req.body;
+
+        try {
+            const response = await knex.select('id').from('recuperacao_senha').where('token',token).where({email});
+            console.log(response);
+            if(response.length > 0){
+
+                jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+                    if (err) return res.send(`<h1>Sua sessão expirou!!!</h1>`);
+                    
+
+                    return res.send(`
+                    <form class="user" id="form-login" action="" style="margin-top: 20px;">
+                        <div class="form-group">
+                        <input type="password" class="form-control form-control-user"  name="senha1" placeholder="nova senha">
+                        </div>
+                        <div class="form-group" style="display:flex">
+                        <input type="password" class="form-control form-control-user" placeholder="confirmacao de senha" name="senha2">
+                    
+                        </div>
+                        <button onclick="login()" id="loginButton" class="btn btn-user btn-block">
+                        Login
+                        </button>
+                    </form>
+                    `)
+                });
+
+                
+            }else{
+                return res.send('token invalido!!!');
+            }
+        } catch (error) {
+            return res.json(error);
+        }
+    },
+
 
     //Funcoes teste
     async update(req, res){

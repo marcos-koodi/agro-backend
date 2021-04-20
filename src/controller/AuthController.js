@@ -40,7 +40,7 @@ module.exports = {
                 return res.json({message:'Usuario ou senha invalido.', status:500})
             }
           }else{
-            return res.json({message:'Usuario não cadastrado.', status: 500})
+            return res.json({message:'Usuario não cadastrado.', status: 400})
           }
   
         });

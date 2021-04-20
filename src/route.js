@@ -27,6 +27,8 @@ route.post('/getAvatar', UserController.getAvatar);
 route.post('/downloadArquivos', UserController.downloadArquivos);
 route.post('/updateAvatar', UserController.updateAvatar);
 route.post('/orcamentosJBS', UserController.orcamentosJBS);
+route.post('/recuperacaoSenha', UserController.recuperacao_senha);
+route.post('/valida_token_recuperacao',UserController.valida_token_recuperacao);
 
 
 
