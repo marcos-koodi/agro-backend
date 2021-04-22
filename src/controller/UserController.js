@@ -919,7 +919,11 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                var response;
+                var JBS = {
+                    "orcamento": "",
+                    "restante":"",
+                    "extrato":{}
+                };
                 const res_id_cliente_servico_etapa = await knex.select('id',).from('cliente_servico_etapa')
                 .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', etapa);
@@ -928,31 +932,32 @@ module.exports = {
                 .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', 5);
 
-                response = await knex.select('id', 'id_cliente_servico_etapa', 'titulo', 'valor', 'cod_banco', 'agencia', 'conta', 'titular', 'cnpj', 'motivo', 'data_cad')
+                const response = await knex.select('id', 'id_cliente_servico_etapa', 'titulo', 'valor', 'cod_banco', 'agencia', 'conta', 'titular', 'cnpj', 'motivo', 'data_cad')
                 .from('orcamento_cliente_servico_etapa')
                 .where('id_cliente_servico_etapa', res_id_cliente_servico_etapa[0]['id']);
-
+                
                 var aux = res_adicional_cliente_servico_etapa[0]['adicional'];
-                await response.forEach(item => {
-                    valor = Number.parseFloat(item.valor);
-                    aux = aux - valor;
-                });
-
-                await response.forEach((item) => {
-                    let dt = new Date(item.data_cad);
-                    item.data_cad = dt.toLocaleDateString('pt-br');
-                });
-
-                console.log("adicional: ", aux);
-                response[0].orcamento = res_adicional_cliente_servico_etapa[0]['adicional'];
-                response[0].restante = aux;
-
                 if(response.length > 0){
-                    return res.json({data:response, status: 200,message:"Carregando Orçamentos"});
-                }else{
-                    return res.json({data:response, status: 540,message:"Não possui Orçamentos."});
+                    console.log("IF");
+                    await response.forEach(item => {
+                        valor = Number.parseFloat(item.valor);
+                        aux = aux - valor;
+                        
+                        let dt = new Date(item.data_cad);
+                        item.data_cad = dt.toLocaleDateString('pt-br');
+                    });
                 }
-            } catch (error) {
+
+                JBS.orcamento = res_adicional_cliente_servico_etapa[0]['adicional'];
+                JBS.restante = aux;
+                JBS.extrato = response;
+                
+                if(response.length > 0){
+                    return res.json({data:JBS, status: 200,message:"Carregando Orçamentos"});
+                }else{
+                    return res.json({data:JBS, status: 540,message:"Não possui Orçamentos."});
+                }
+            } catch(error){
                 return res.json({data:error, status: 400,message:"Não foi possivel carregar os Orçamentos"});
             }
         });
