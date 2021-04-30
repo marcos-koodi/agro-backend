@@ -761,8 +761,10 @@ module.exports = {
                     .where(function() {
                         this.where('cse.status', 1).orWhere('cse.status', 0)
                       })
-                    // .where('cse.status',1, OR, 'cse.status', 0)
-                    .where('cs.id_cliente', id_cliente)
+                    .where(function() {
+                        this.where('cs.id_cliente', id_cliente).orWhere('cs.herdeiro_1', id_cliente).orWhere('cs.herdeiro_2', id_cliente)
+                      })
+                    // .where('cs.id_cliente', id_cliente, OR, 'cs.herdeiro_1', id_cliente, OR, 'cs.herdeiro_2', id_cliente)
                     .groupBy('cse.id_cliente_servico');
                     // console.log(response);
                 if(response.length > 0){
@@ -1040,7 +1042,7 @@ module.exports = {
             if(response.length > 0){
 
                 jwt.verify(token, process.env.SECRET, async function(err, decoded) {
-                    if (err) return res.send(`<h1>Sua sessão expirou!!!</h1>`);
+                    if (err) return res.send(`<h3>Sua sessão expirou!!!</h3>`);
                     
 
                     return res.send(`
