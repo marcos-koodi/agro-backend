@@ -2,7 +2,7 @@ const { response } = require('express');
 const knex = require('../database/index');
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-
+const moment = require('moment');
 module.exports = {
     async index(req, res){
         try {
@@ -311,6 +311,7 @@ module.exports = {
             };
         });
     },
+    
     async dadosProcessoEtapa(req,res){
         const token = req.headers['x-access-token'];
 
@@ -417,7 +418,16 @@ module.exports = {
                     listDocPropriedade.forEach(async(value)=>{
                         await processoEtapa.doc.push(value);
                     });
+                    if(id_etapa == 2 && processoEtapa.doc[0].status != 2){
+                        const res_isDoc = await knex.select('doc_admin').from('cliente_servico_etapa')
+                        .where('id_cliente_servico', id_cliente_servico)
+                        .where('etapa', etapa);
+                        if(res_isDoc.length > 0){
+                            console.log("is Doc: ", res_isDoc);
 
+                            processoEtapa.doc[0].status = 1
+                        }
+                    }
                     // processoEtapa.doc = tp_listaProp[0];
                 }
 
@@ -549,6 +559,13 @@ module.exports = {
                 .where('cse.id_cliente_servico',id_cliente_servico)
                 .where('cse.etapa', 3);
                 // resVisita[0].id_servico = resId_cliente_servico[0]['id_servico'];
+
+                if(resVisita.length > 0){
+                    resVisita[0]['data'] = moment(resVisita[0]['data']).format('DD/MM/YYYY');
+                    // 10:00:00  -> 10h00
+                    // let hora = moment(resVisita[0]['horario'], 'HHmmss').format('HH:mm');
+                    // resVisita[0]['horario'] = hora.replace(':','h');
+                }
 
                 return res.json(resVisita);
             } catch (error) {
