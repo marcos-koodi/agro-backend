@@ -329,7 +329,6 @@ module.exports = {
 
                 var processoEtapa = {
                     "id_cliente_servico": id_cliente_servico,
-                    // "status": 0,
                     "etapa": etapa,
                     "id_etapa": id_etapa,
                     "status_processo_interno":res_cliente_servico_etapa[0]['status_processo_interno'],
@@ -346,19 +345,12 @@ module.exports = {
                     }]
                 };
 
-                //Retorna o ID da tabela "cliente_servico_etapa" referente a ETAPA.:
-                // const resId_cliente_servico_etapa = await knex.select('id')
-                // .from('cliente_servico_etapa')
-                // .where('id_cliente_servico', id_cliente_servico)
-                // .where('etapa', etapa);
-                // processoEtapa.id_cliente_servico_etapa = resId_cliente_servico_etapa[0]['id'];
-
                 var listDocPropriedade="";
                 var docPropriedade=""
 
                 /**verifica se a Etapa Requer Documento 
-                        Etapas que REQUER DOCUMENTO : 2, 5, 10, 11*/
-                if(id_etapa == 2 || id_etapa == 5 || id_etapa == 10 || id_etapa == 11){
+                        Etapas que REQUER DOCUMENTO : 2, 5, , 11   id_etapa == 10 ||*/
+                if(id_etapa == 2 || id_etapa == 5 || id_etapa == 11){
 
                     // Verifica e Retorna o stts do(s) Doc(s) da Etapa já anexados.:
                     listDocPropriedade = await knex.select(
@@ -430,7 +422,16 @@ module.exports = {
                     }
                     // processoEtapa.doc = tp_listaProp[0];
                 }
-
+                else if(id_etapa == 10){
+                    const res_docLaudo = await knex.select('id', 'doc_admin').from('cliente_servico_etapa')
+                    .where('id_cliente_servico', id_cliente_servico)
+                    .where('etapa', 4);
+                    if(res_docLaudo[0]['doc_admin'] == null){
+                        processoEtapa.status_processo_interno = 0;
+                    }else if(res_docLaudo[0]['doc_admin']){
+                        processoEtapa.status_processo_interno = 2;
+                    }
+                }
 
                 return res.json(processoEtapa);
 
@@ -565,6 +566,12 @@ module.exports = {
                     // 10:00:00  -> 10h00
                     // let hora = moment(resVisita[0]['horario'], 'HHmmss').format('HH:mm');
                     // resVisita[0]['horario'] = hora.replace(':','h');
+                    const res_doc = await knex.select('doc_admin').from('cliente_servico_etapa')
+                    .where('id_cliente_servico', id_cliente_servico)
+                    .where('etapa', 3);
+                    if(res_doc.length > 0){
+                        resVisita[0]['status'] = 1;
+                    }
                 }
 
                 return res.json(resVisita);
