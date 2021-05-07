@@ -414,7 +414,7 @@ module.exports = {
                         const res_isDoc = await knex.select('doc_admin').from('cliente_servico_etapa')
                         .where('id_cliente_servico', id_cliente_servico)
                         .where('etapa', etapa);
-                        if(res_isDoc.length > 0){
+                        if(res_isDoc[0]['doc_admin'] != null){
                             console.log("is Doc: ", res_isDoc);
 
                             processoEtapa.doc[0].status = 1
@@ -551,8 +551,7 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                // const resId_cliente_servico = await knex.select('id','id_servico').from('cliente_servico').where('id', id_cliente_servico);
- 
+
                 // documentos_cliente_servico_etapa AS docsEtp
                 const resVisita = await knex.select('visita.data','visita.horario', 'visita.endereco', 'visita.status', 'visita.id_cliente_servico_etapa')
                 .from('visitas_cliente_servico_etapa AS visita')
@@ -569,7 +568,7 @@ module.exports = {
                     const res_doc = await knex.select('doc_admin').from('cliente_servico_etapa')
                     .where('id_cliente_servico', id_cliente_servico)
                     .where('etapa', 3);
-                    if(res_doc.length > 0){
+                    if(res_doc[0]['doc_admin'] != null){
                         resVisita[0]['status'] = 1;
                     }
                 }
