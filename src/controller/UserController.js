@@ -28,7 +28,7 @@ module.exports = {
             if(response.length > 0){
                 var msg='Usuario já cadastrado.';
                 if(response[0]['status'] == 0){
-                    msg ="Aguarde aprovação do cadastro.";
+                    msg =" Usuario já cadastado. Aguarde aprovação do cadastro.";
                 }else if(response[0]['status'] == 2){
                     msg ="Usuario já cadastrado, entre em contato com administrador.";
                 }
