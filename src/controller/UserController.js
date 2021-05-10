@@ -699,7 +699,7 @@ module.exports = {
     },
 
     async cadServico(req, res){
-        const { id_cliente, herdeiro_1, herdeiro_2, id_servico} = req.body;
+        const { id_cliente, herdeiro_1, herdeiro_2, id_servico, estado} = req.body;
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 
@@ -711,7 +711,7 @@ module.exports = {
                 const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
                 if(resEtapas.length > 0){
                     let data_cad = new Date();
-                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, data_cad}).returning('id');
+                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, data_cad, estado}).returning('id');
                     for(i = 1; i <= resEtapas.length; i++ ){
                         var status = 0;
                         if(i == 1){
