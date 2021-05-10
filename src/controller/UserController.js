@@ -708,10 +708,11 @@ module.exports = {
             // VALIDAR resEtapas; validado, Está certo?
 
             try{
-                const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico',id_servico );
+                const resEtapas = await knex('etapa_servico').select('etapa').where('id_servico', id_servico);
+                console.log("etp: ", resEtapas);
                 if(resEtapas.length > 0){
                     let data_cad = new Date();
-                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, data_cad, estado}).returning('id');
+                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, estado, data_cad}).returning('id');
                     for(i = 1; i <= resEtapas.length; i++ ){
                         var status = 0;
                         if(i == 1){
@@ -726,11 +727,11 @@ module.exports = {
                         console.log("Certo ao cadastrar servico");
                         return res.json({message: 'Serviço cadastrado com sucesso!', status:200, id_cliente_servico:id_cliente_servico, data: response})
                     }else{
-                        console.log("Error ao cadastrar");
+                        console.log("Error ao cadastrar 1");
                         return res.json({message: 'Erro ao cadastrar...',status:400, data: error});
                     }
                 }else{
-                    console.log("Error ao cadastrar");
+                    console.log("Error ao cadastrar 2");
                     return res.json({message: 'Erro ao cadastrar servico, etapas não estabelecidas...',status:400, data: error});
                 }
             }catch (error) {
