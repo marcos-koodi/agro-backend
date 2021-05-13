@@ -971,11 +971,13 @@ module.exports = {
                         
                         let dt = new Date(item.data_cad);
                         item.data_cad = dt.toLocaleDateString('pt-br');
+
+                        item.valor = valor.toLocaleString('pt-br', {minimumFractionDigits: 2});
                     });
                 }
-
-                JBS.orcamento = res_adicional_cliente_servico_etapa[0]['adicional'];
-                JBS.restante = aux;
+                
+                JBS.orcamento = Number.parseFloat(res_adicional_cliente_servico_etapa[0]['adicional']).toLocaleString('pt-br', {minimumFractionDigits: 2});
+                JBS.restante = Number.parseFloat(aux).toLocaleString('pt-br', {minimumFractionDigits: 2});
                 JBS.extrato = response;
                 
                 if(response.length > 0){
