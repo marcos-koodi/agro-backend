@@ -1068,7 +1068,7 @@ module.exports = {
             if(response.length > 0){
 
                 jwt.verify(token, process.env.SECRET, async function(err, decoded) {
-                    if (err) return res.send(`<h3>Sua sessão expirou!!!</h3>`);
+                    if (err) return res.send(`<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.`);
                     
 
                     return res.send(`
@@ -1089,7 +1089,7 @@ module.exports = {
 
                 
             }else{
-                return res.send('token invalido!!!');
+                return res.send('Recuperação de senha invalida!!! <br> Solicite a recuperação de senha pelo APP.');
             }
         } catch (error) {
             return res.json(error);
