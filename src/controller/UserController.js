@@ -95,6 +95,46 @@ module.exports = {
         });
     },
 
+    async getServicos(req, res){
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                let response = await knex.select('*').from('servicos').where('status', 1);
+                
+                for(let i = 0; i < response.length ; i++){
+                    const base64 = String.fromCharCode.apply(null, new Uint16Array(response[i].icone));
+                    response[i]['icone'] = base64;
+
+                    /**try {
+                        let imagem = new Uint8Array(response[i].icone).reduce(function (data, byte) {
+                            return data + String.fromCharCode(byte);
+                        },'');
+                        response[i]['icone'] = imagem;
+                    } catch (error) {
+                        console.log(error)
+                    }*/
+                }
+                let listServico = [];
+
+                response.forEach(function(item, index){
+                  if(item.id == 14 || item.id == 3){
+                    listServico.push(item);
+                    response.splice(index, 1);
+                  }
+                });
+                
+                response = listServico.concat(response);
+
+               return res.json({data:response, status: 200,message:"Carregando servicos"});
+            } catch (error) {
+                return res.json({data:error, status: 400, message:"Não foi possivel carregar os servicos"});
+            }
+        });
+    },
+
     async getSlider(req, res){
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
@@ -699,7 +739,7 @@ module.exports = {
     },
 
     async cadServico(req, res){
-        const { id_cliente, herdeiro_1, herdeiro_2, id_servico, estado} = req.body;
+        const { id_cliente, herdeiro_1, herdeiro_2, id_servico, estado, id_expansionista} = req.body;
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 
@@ -712,7 +752,7 @@ module.exports = {
                 console.log("etp: ", resEtapas);
                 if(resEtapas.length > 0){
                     let data_cad = new Date();
-                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, estado, data_cad}).returning('id');
+                    const id_cliente_servico = await knex('cliente_servico').insert({id_cliente, herdeiro_1, herdeiro_2, id_servico, estado, id_expansionista, data_cad}).returning('id');
                     for(i = 1; i <= resEtapas.length; i++ ){
                         var status = 0;
                         if(i == 1){
@@ -736,6 +776,61 @@ module.exports = {
                 }
             }catch (error) {
                 return res.json({data:error, status: 400,message:"Não foi possivel cadastrar servico"});            
+            }
+            
+        });
+    },
+    
+    async listaPlntaJBS(req, res){
+        const {estado} = req.body;
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+            if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try{
+                const resPlanta = await knex.select('*').from('planta').where({estado});
+                
+                console.log("Lista Planta: ", resPlanta);
+
+                if(resPlanta.length > 0){
+
+                    return res.json({message: 'Planta retornado com sucesso!', status:200, data: resPlanta});
+
+                }else{
+                    console.log("Error ao gerar planta.");
+                    return res.json({message: 'Não possiu planta nesse estado...', status:300, data: []});
+                }
+            }catch (error) {
+                console.log("Error.");
+
+                return res.json({data:error, status: 400,message:"Não foi possivel gerar lista de Planta"});
+            }
+        });
+    },
+
+    async getExpansionista(req, res){
+        const {id_planta} = req.body;
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+            if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try{
+                const resExpansionista = await knex.select('*').from('expansionista').where({id_planta});
+
+                // const resExpansionista = await knex('*').select('expansionista').where('id_planta', id_planta);
+
+                if(resExpansionista.length > 0){
+
+                    return res.json({message: 'Expansionistas retornado com sucesso!', status:200, data: resExpansionista});
+
+                }else{
+                    console.log("Error ao gerar expansionista.");
+                    return res.json({message: 'Erro ao gerar expansionista...', status:300, data: []});
+                }
+            }catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel gerar expansionista"});
             }
             
         });
@@ -778,7 +873,7 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 var response = await knex.select('cs.id as id_cliente_servico', 'cs.id_servico AS id_servico', 'cs.herdeiro_1',
-                    'cs.herdeiro_2', 's.nome AS nome_servico', 'cs.data_cad', 'cse.etapa', 'cse.status')
+                    'cs.herdeiro_2', 's.nome AS nome_servico', 's.icone', 'cs.data_cad', 'cse.etapa', 'cse.status')
                     .from('cliente_servico AS cs')
                     .innerJoin('cliente_servico_etapa as cse', 'cs.id', 'cse.id_cliente_servico')
                     .innerJoin('servicos AS s', 'cs.id_servico', 's.id')
@@ -795,6 +890,10 @@ module.exports = {
                     await response.forEach((item) => {
                         let dt = new Date(item.data_cad);
                         item.data_cad = dt.toLocaleDateString('pt-br');
+
+                        const base64 = String.fromCharCode.apply(null, new Uint16Array(item.icone));
+                        item['icone'] = base64;
+
                       });
                     return res.json({data:response, status: 200,message:"Carregando os planos"});
                 }else{

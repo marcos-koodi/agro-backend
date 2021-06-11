@@ -7,6 +7,7 @@ route.post('/token', AuthController.token);
 route.post('/login', AuthController.login);
 route.post('/cadastro', UserController.create);
 route.post('/getConsorcios', UserController.getConsorcios);
+route.post('/getServicos', UserController.getServicos);
 route.post('/getSlider', UserController.getSlider);
 route.post('/isCpf', UserController.isCpf);
 route.post('/listaDocs', UserController.listaDocsCli);
@@ -29,6 +30,8 @@ route.post('/updateAvatar', UserController.updateAvatar);
 route.post('/orcamentosJBS', UserController.orcamentosJBS);
 route.post('/recuperacaoSenha', UserController.recuperacao_senha);
 route.post('/valida_token_recuperacao',UserController.valida_token_recuperacao);
+route.post('/listaPlntaJBS', UserController.listaPlntaJBS);
+route.post('/getExpansionista', UserController.getExpansionista);
 
 
 
