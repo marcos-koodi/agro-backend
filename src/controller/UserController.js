@@ -1195,6 +1195,25 @@ module.exports = {
         }
     },
 
+    async id_user_notification(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_cliente, user_id } = req.body;
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                if(user_id !== null ){
+                    const response = await knex('user_cliente')
+                    .update('id_user_notification', user_id).where('id', '=', id_cliente);
+                    return res.json("Id notificação alterado com sucesso!")
+                }
+            } catch (error) {
+                return res.send("Não foi possivel alterar o Id de notificação.");
+            }
+        });
+    },
+
 
     //Funcoes teste
     async update(req, res){
