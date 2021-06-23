@@ -70,7 +70,7 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                const response = await knex.select('id', 'titulo', 'subtitulo', 'icone', 'descricao', 'status', 'data_cad').from('consorcios').where('status', 1);
+                const response = await knex.select('id', 'titulo', 'subtitulo', 'icone', 'descricao').from('consorcios').where('status', 1);
                 
                 for(let i = 0; i < response.length ; i++){
                     const base64 = String.fromCharCode.apply(null, new Uint16Array(response[i].icone));
