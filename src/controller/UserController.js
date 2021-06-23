@@ -94,6 +94,40 @@ module.exports = {
             }
         });
     },
+    
+    async getImagemConsorcio(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_consorcio } = req.body;
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+    
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                console.log("id_consorcio: ", id_consorcio);
+                const response = await knex.select('imagem').from('consorcios').where('id', id_consorcio);
+                console.log("RESPONSe 1: ", response);
+                // for(let i = 0; i < response.length ; i++){
+                //     const base64 = String.fromCharCode.apply(null, new Uint16Array(response[i].icone));
+                //     response[i]['icone'] = base64;
+
+                    try {
+                        let imagem = new Uint8Array(response[0]['imagem']).reduce(function (data, byte) {
+                            return data + String.fromCharCode(byte);
+                        }, '');
+
+                        response[0]['imagem'] = imagem;
+                    } catch (error) {
+                        console.log(error)
+                    }
+
+                // }
+
+               return res.json({data:response, status: 200,message:"Carregando imagem do consórcio"});
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel carregar a imagem do consórcio"});
+            }
+        });
+    },
 
     async getServicos(req, res){
         const token = req.headers['x-access-token'];

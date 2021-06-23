@@ -7,6 +7,7 @@ route.post('/token', AuthController.token);
 route.post('/login', AuthController.login);
 route.post('/cadastro', UserController.create);
 route.post('/getConsorcios', UserController.getConsorcios);
+route.post('/getImagemConsorcio', UserController.getImagemConsorcio);
 route.post('/getServicos', UserController.getServicos);
 route.post('/getSlider', UserController.getSlider);
 route.post('/isCpf', UserController.isCpf);
