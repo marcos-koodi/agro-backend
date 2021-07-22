@@ -346,7 +346,7 @@ module.exports = {
                 console.log("resId_cliente_servico_etapa: ", resId_cliente_servico_etapa);
                 
                 // status, tipo_doc, nome, setor, 
-                const listDocPropriedade = await knex.select('docsEtp.status', 'docsEtp.tipo_doc', 'tpDoc.nome','tpDoc.setor', 'tpDoc.tipo', 'docsEtp.id_cliente_servico_etapa')
+                const listDocPropriedade = await knex.select('docsEtp.status', 'docsEtp.tipo_doc', 'tpDoc.nome','tpDoc.setor', 'tpDoc.tipo', 'docsEtp.id_cliente_servico_etapa', 'docsEtp.id')
                 .from('documentos_cliente_servico_etapa AS docsEtp')
                 .innerJoin('tipo_documento AS tpDoc', 'tpDoc.id', 'docsEtp.tipo_doc')
                 .where('docsEtp.id_cliente_servico_etapa',resId_cliente_servico_etapa[0]['id']).where('tpDoc.setor', 'Propriedade');
