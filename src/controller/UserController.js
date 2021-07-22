@@ -266,7 +266,7 @@ module.exports = {
                     .where('id_cliente_servico', id_cliente_servico)
                     .where('etapa',1);
 
-                    documentos_cliente_servico_etapa = await knex.select('docsEtp.status', 'docsEtp.tipo_doc', 'tpDoc.nome','tpDoc.setor', 'tpDoc.tipo', 'docsEtp.id_cliente_servico_etapa')
+                    documentos_cliente_servico_etapa = await knex.select('docsEtp.status', 'docsEtp.tipo_doc', 'tpDoc.nome','tpDoc.setor', 'tpDoc.tipo', 'docsEtp.id_cliente_servico_etapa', 'docsEtp.id')
                     .from('documentos_cliente_servico_etapa AS docsEtp')
                     .innerJoin('tipo_documento AS tpDoc', 'tpDoc.id', 'docsEtp.tipo_doc')
                     .where('docsEtp.id_cliente', id)
