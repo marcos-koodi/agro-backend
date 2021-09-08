@@ -32,7 +32,7 @@ app.use(express.urlencoded({limit: '50mb'}));
 // }
 
 // Enable preflight requests for all routes
-app.options('', cors(corsOptions));
+// app.options('', cors(corsOptions));
 
 app.use(cors());
 app.use(route);
