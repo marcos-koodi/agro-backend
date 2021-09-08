@@ -720,20 +720,23 @@ module.exports = {
                 var response = null;
                 var msg;
                 console.log("ID add endereco: ", id);
-                if(id.length > 0 || id !== null ){
-                    console.log("if Altera endereco ");
-                    //ALTERAR endereco
-                    response = await knex('enderecos_cliente').
-                    update({titulo, endereco, numero, bairro, cidade, estado, cep})
-                    .where('id', '=', id);
-                    msg = " altera";
-                }else{
+                if(id === "" || id === null || id === undefined ){
                     console.log("else ADD endereco ");
                     // NOVO endereço
                     response = await knex('enderecos_cliente')
                     .insert({id_cliente, titulo, endereco, numero, bairro, cidade, estado, cep})
                     .returning('id');
                     msg = " cadastra";
+                }else{
+
+                    console.log("if Altera endereco ");
+                    //ALTERAR endereco
+                    response = await knex('enderecos_cliente').
+                    update({titulo, endereco, numero, bairro, cidade, estado, cep})
+                    .where('id', '=', id);
+                    msg = " altera";
+
+                   
                 }
                 console.log("Res end: ", response);
                 // if(response.length > 0){
