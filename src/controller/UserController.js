@@ -400,7 +400,7 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 // const resId_cliente_servico = await knex.select('id').from('cliente_servico').where('id', id_cliente_servico);
-                const res_cliente_servico_etapa = await knex.select('id','adicional', 'status_processo_interno').from('cliente_servico_etapa')
+                const res_cliente_servico_etapa = await knex.select('id','adicional','orc_equipamentos', 'orc_recursos', 'status_processo_interno').from('cliente_servico_etapa')
                 .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', etapa);
 
@@ -410,6 +410,10 @@ module.exports = {
                     "id_etapa": id_etapa,
                     "status_processo_interno":res_cliente_servico_etapa[0]['status_processo_interno'],
                     "adicional":res_cliente_servico_etapa[0]['adicional'],
+
+                    "orc_equipamentos":res_cliente_servico_etapa[0]['orc_equipamentos'],
+                    "orc_recursos":res_cliente_servico_etapa[0]['orc_recursos'],
+
                     "id_cliente_servico_etapa": res_cliente_servico_etapa[0]['id'],
 
                     "doc":[{
@@ -560,7 +564,8 @@ module.exports = {
     async downloadArquivos(req, res){
         const token = req.headers['x-access-token'];
         const { id_doc, tipo, tabela_doc } = req.body;
-        console.log("Vem terminar a função!!!");
+        // console.log("Vem terminar a função!!!");
+        console.log("Tipo ", tipo);
 
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
 
@@ -714,13 +719,16 @@ module.exports = {
             try {
                 var response = null;
                 var msg;
-                if(id || id != null){
+                console.log("ID add endereco: ", id);
+                if(id.length > 0 || id !== null ){
+                    console.log("if Altera endereco ");
                     //ALTERAR endereco
                     response = await knex('enderecos_cliente').
                     update({titulo, endereco, numero, bairro, cidade, estado, cep})
                     .where('id', '=', id);
                     msg = " altera";
                 }else{
+                    console.log("else ADD endereco ");
                     // NOVO endereço
                     response = await knex('enderecos_cliente')
                     .insert({id_cliente, titulo, endereco, numero, bairro, cidade, estado, cep})
@@ -910,13 +918,13 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 var response = await knex.select('cs.id as id_cliente_servico', 'cs.id_servico AS id_servico', 'cs.herdeiro_1',
-                    'cs.herdeiro_2', 's.nome AS nome_servico', 's.icone', 'cs.data_cad', 'cse.etapa', 'cse.status')
+                    'cs.herdeiro_2', 's.nome AS nome_servico', 's.icone','s.descricao AS descricao_servico', 'cs.data_cad', 'cse.etapa', 'cse.status')
                     .from('cliente_servico AS cs')
                     .innerJoin('cliente_servico_etapa as cse', 'cs.id', 'cse.id_cliente_servico')
                     .innerJoin('servicos AS s', 'cs.id_servico', 's.id')
-                    .where(function() {
-                        this.where('cse.status', 1).orWhere('cse.status', 0)
-                      })
+                    // .where(function() {
+                    //     this.where('cse.status', 1).orWhere('cse.status', 0)
+                    //   })
                     .where(function() {
                         this.where('cs.id_cliente', id_cliente).orWhere('cs.herdeiro_1', id_cliente).orWhere('cs.herdeiro_2', id_cliente)
                       })
@@ -1044,7 +1052,7 @@ module.exports = {
                 }else if(contato == "cel"){
                     const response = await knex('user_cliente')
                     .update('celular', numero).where('id', '=', id_cliente);
-                    return res.json("Clular alterado com sucesso!")
+                    return res.json("Celular alterado com sucesso!")
 
                 }
                 
@@ -1071,8 +1079,32 @@ module.exports = {
         });
     },
 
+    async updateSenha(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_cliente, nova_senha, atual_senha  } = req.body;
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                const response_senha = await knex('user_cliente')
+                .select('senha').where('id', '=', id_cliente);
+                
+                if(response_senha[0].senha == atual_senha){
+                    const response = await knex('user_cliente')
+                    .update('senha', nova_senha).where('id', '=', id_cliente);
+
+                    return res.json({status:200, message:"Senha alterada com sucesso!"});
+                }else{
+                    return res.json({status:500, message:"Senha incorreta!"});
+                }
+            } catch (error) {
+                return res.send({status:400, message:"Não foi possivel alterar a senha."});
+            }
+        });
+    },
+
     async orcamentosJBS(req, res){
-        // const {id_cliente} = req.body;
         const {id_cliente_servico, etapa, id_etapa} = req.body;
 
         const token = req.headers['x-access-token'];
@@ -1082,38 +1114,78 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 var JBS = {
-                    "orcamento": "",
-                    "restante":"",
+                    "orc_obras":"",
+                    "saida_obras":"",
+                    "saldo_obras":"",
+
+                    "orc_equipamentos":"",
+                    "saida_equipamentos":"",
+                    "saldo_equipamentos":"",
                     "extrato":{}
                 };
-                const res_id_cliente_servico_etapa = await knex.select('id',).from('cliente_servico_etapa')
+                const res_id_cliente_servico_etapa = await knex.select('id').from('cliente_servico_etapa')
                 .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', etapa);
 
-                const res_adicional_cliente_servico_etapa = await knex.select('adicional',).from('cliente_servico_etapa')
+                const res_adicional_cliente_servico_etapa = await knex.select('adicional','orc_recursos', 'orc_equipamentos').from('cliente_servico_etapa')
                 .where('id_cliente_servico', id_cliente_servico)
                 .where('etapa', 5);
 
-                const response = await knex.select('id', 'id_cliente_servico_etapa', 'titulo', 'valor', 'cod_banco', 'agencia', 'conta', 'titular', 'cnpj', 'motivo', 'data_cad')
+                const response = await knex.select('id', 'id_cliente_servico_etapa', 'titulo', 'valor','tipo', 'cod_banco', 'agencia', 'conta', 'titular', 'cnpj', 'motivo', 'data_cad')
                 .from('orcamento_cliente_servico_etapa')
                 .where('id_cliente_servico_etapa', res_id_cliente_servico_etapa[0]['id']);
                 
-                var aux = res_adicional_cliente_servico_etapa[0]['adicional'];
+
+                var saldo_obras = res_adicional_cliente_servico_etapa[0]['adicional'];
+                saldo_obras = saldo_obras.replace('.','');
+                saldo_obras = saldo_obras.replace(',','.');
+                saldo_obras = Number.parseFloat(saldo_obras);
+                var saida_obras = 0;
+
+                var saldo_equipamentos = res_adicional_cliente_servico_etapa[0]['orc_equipamentos'];
+                saldo_equipamentos = saldo_equipamentos.replace('.','');
+                saldo_equipamentos = saldo_equipamentos.replace(',','.');
+                saldo_equipamentos = Number.parseFloat(saldo_equipamentos);
+                var saida_equipamentos = 0;
+
                 if(response.length > 0){
-                    console.log("IF");
+                    // console.log("response orcamento_cliente_servico_etapa: \n", response);
                     await response.forEach(item => {
-                        valor = Number.parseFloat(item.valor);
-                        aux = aux - valor;
+                        
+                        if(item.tipo == 'Obras'){
+                            // var obras = (item.valor).toLocaleString('pt-br', {minimumFractionDigits: 2});
+                            var obras = (item.valor).replace('.','');
+                            obras = obras.replace(',','.');
+                            obras = Number.parseFloat(obras);
+                            saldo_obras = saldo_obras - obras;
+                            saida_obras = saida_obras + obras;
+
+                            item.valor = obras.toLocaleString('pt-br', {minimumFractionDigits: 2});
+
+                        }else if(item.tipo == 'Equipamentos'){
+                            // var equipamentos = (item.valor).toLocaleString('pt-br', {minimumFractionDigits: 2});
+                            var equipamentos = (item.valor).replace('.','');
+                            equipamentos = equipamentos.replace(',','.');
+                            equipamentos = Number.parseFloat(equipamentos);
+                            saldo_equipamentos = saldo_equipamentos - equipamentos;
+                            saida_equipamentos = saida_equipamentos + equipamentos;
+
+                            item.valor = equipamentos.toLocaleString('pt-br', {minimumFractionDigits: 2});
+                        };
                         
                         let dt = new Date(item.data_cad);
                         item.data_cad = dt.toLocaleDateString('pt-br');
-
-                        item.valor = valor.toLocaleString('pt-br', {minimumFractionDigits: 2});
                     });
                 }
-                
-                JBS.orcamento = Number.parseFloat(res_adicional_cliente_servico_etapa[0]['adicional']).toLocaleString('pt-br', {minimumFractionDigits: 2});
-                JBS.restante = Number.parseFloat(aux).toLocaleString('pt-br', {minimumFractionDigits: 2});
+
+                JBS.orc_obras = (res_adicional_cliente_servico_etapa[0]['adicional']).toLocaleString('pt-br', {minimumFractionDigits: 2});
+                JBS.saida_obras = saida_obras.toLocaleString('pt-br', {minimumFractionDigits: 2});
+                JBS.saldo_obras = saldo_obras.toLocaleString('pt-br', {minimumFractionDigits: 2});
+
+                JBS.orc_equipamentos = (res_adicional_cliente_servico_etapa[0]['orc_equipamentos']).toLocaleString('pt-br', {minimumFractionDigits: 2});
+                JBS.saida_equipamentos = saida_equipamentos.toLocaleString('pt-br', {minimumFractionDigits: 2});
+                JBS.saldo_equipamentos = saldo_equipamentos.toLocaleString('pt-br', {minimumFractionDigits: 2});
+
                 JBS.extrato = response;
                 
                 if(response.length > 0){
@@ -1122,6 +1194,7 @@ module.exports = {
                     return res.json({data:JBS, status: 540,message:"Não possui Orçamentos."});
                 }
             } catch(error){
+                console.log("erro JBS: ",error);
                 return res.json({data:error, status: 400,message:"Não foi possivel carregar os Orçamentos"});
             }
         });
