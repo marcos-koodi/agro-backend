@@ -1233,15 +1233,15 @@ module.exports = {
                             secure: false,
                             requireTLS: true,
                             auth: {
-                              user: 'caderno-executivo@evolutionsoft.com.br',
-                              pass: 'Teste123'
+                              user: 'site@evolutionsoft.com.br',
+                              pass: 'Evolution@2021'
                             }
                           });
                           
                         
-                        let url = 'http://localhost/EvSOFT/otaviocardena-agroempreender-web-46e6cf120b44/agropainelAdmin/reuperarSenha.html?token='+token_senha+'&email='+email;
+                        let url = 'http://agroempreender.com.br/painel-administrativo/recuperarSenha.html?token='+token_senha+'&email='+email;
                         var mailOptions = {
-                            from: 'caderno-executivo@evolutionsoft.com.br',
+                            from: 'site@evolutionsoft.com.br',
                             to: email,
                             subject: 'Redefinir Senha - agroempreender',
                             html: 'Olá prezado.</br>Ouvimos dizer que você esqueceu sua senha. </br>Abaixo segue o link para redefinicao de senha.</br></br><a href="'+url+'">alterar senha</a>'
