@@ -1270,6 +1270,25 @@ module.exports = {
             }
         });
     },
+    async altera_recuperacao_senha(req, res){
+        const token = req.headers['x-access-token'];
+        const { email, senha } = req.body;
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+            if (err) return res.send('<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.');
+            try {
+                const response = await knex('user_cliente')
+                .update('senha', senha).where('email', '=', email);
+
+                if(response){
+                    return res.send(<h3>Senha alterada com sucesso!</h3>);
+                }else{
+                    return res.send(<h3>Erro ao alterar senha!</h3>);
+                }
+            } catch (error) {
+                return res.send(<h3>Não foi possivel alterar a senha.</h3>);
+            }
+        });
+    },
 
     async valida_token_recuperacao(req, res){
         const { token, email } = req.body;
@@ -1280,8 +1299,8 @@ module.exports = {
             if(response.length > 0){
 
                 jwt.verify(token, process.env.SECRET, async function(err, decoded) {
-                    if (err) return res.send(`<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.`);
-                    
+                    if (err) return res.send('<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.');
+
 
                     return res.send(`
                     <form class="user" id="form-login" action="" style="margin-top: 20px;">
@@ -1292,14 +1311,14 @@ module.exports = {
                         <input type="password" class="form-control form-control-user" placeholder="confirmacao de senha" name="senha2">
                     
                         </div>
-                        <button onclick="login()" id="loginButton" class="btn btn-user btn-block">
+                        <button onclick="recuperar_senha()" id="loginButton" class="btn btn-user btn-block">
                         Login
                         </button>
                     </form>
                     `)
                 });
 
-                
+
             }else{
                 return res.send('Recuperação de senha invalida!!! <br> Solicite a recuperação de senha pelo APP.');
             }
