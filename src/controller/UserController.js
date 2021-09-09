@@ -912,43 +912,58 @@ module.exports = {
         });
     },
 
-    async seusPlanos(req, res){
-        const {id_cliente } = req.body;
+    async seusPlanos(req, res) {
+        const { id_cliente } = req.body;
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
-    
-        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
-          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+
+        jwt.verify(token, process.env.SECRET, async function (err, decoded) {
+            if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 var response = await knex.select('cs.id as id_cliente_servico', 'cs.id_servico AS id_servico', 'cs.herdeiro_1',
-                    'cs.herdeiro_2', 's.nome AS nome_servico', 's.icone','s.descricao AS descricao_servico', 'cs.data_cad', 'cse.etapa', 'cse.status')
+                    'cs.herdeiro_2', 's.nome AS nome_servico', 's.icone', 's.descricao AS descricao_servico', 'cs.data_cad', 'cse.status')
                     .from('cliente_servico AS cs')
                     .innerJoin('cliente_servico_etapa as cse', 'cs.id', 'cse.id_cliente_servico')
                     .innerJoin('servicos AS s', 'cs.id_servico', 's.id')
-                    // .where(function() {
+                    //'cse.etapa'
+                    // .where(function () {
                     //     this.where('cse.status', 1).orWhere('cse.status', 0)
-                    //   })
-                    .where(function() {
+                    // })
+                    .where(function () {
                         this.where('cs.id_cliente', id_cliente).orWhere('cs.herdeiro_1', id_cliente).orWhere('cs.herdeiro_2', id_cliente)
-                      })
+                    })
                     // .where('cs.id_cliente', id_cliente, OR, 'cs.herdeiro_1', id_cliente, OR, 'cs.herdeiro_2', id_cliente)
+                    //.orderBy('cse.etapa', 'desc')
                     .groupBy('cse.id_cliente_servico');
-                    // console.log(response);
-                if(response.length > 0){
-                    await response.forEach((item) => {
-                        let dt = new Date(item.data_cad);
-                        item.data_cad = dt.toLocaleDateString('pt-br');
+                // console.log(response);
 
-                        const base64 = String.fromCharCode.apply(null, new Uint16Array(item.icone));
-                        item['icone'] = base64;
+                if (response.length > 0) {
+                    //await response.forEach(async (item, aux) => {
+                    for (let i = 0; i < response.length; i++) {
+                        var id_cliente_servico = response[i].id_cliente_servico;
+                        var responseStatus = await knex.select('status')
+                            .from('cliente_servico_etapa').where('id_cliente_servico', id_cliente_servico).where('status', 1);
+                            
+                        if (responseStatus.length > 0) {
+                            response[i]['etapa'] = "Em andamento"
+                            response[i]['status'] = 1;
+                        } else {
+                            response[i]['etapa'] = "Finalizado"
+                            response[i]['status'] = 2;
+                        }
 
-                      });
-                    return res.json({data:response, status: 200,message:"Carregando os planos"});
-                }else{
-                    return res.json({data:response, status: 540,message:"Sem planos em andamento"});
+                        let dt = new Date(response[i].data_cad);
+                        response[i].data_cad = dt.toLocaleDateString('pt-br');
+
+                        const base64 = String.fromCharCode.apply(null, new Uint16Array(response[i].icone));
+                        response[i]['icone'] = base64;
+                    }
+                    return res.json({ data: response, status: 200, message: "Carregando os planos" });
+                } else {
+                    return res.json({ data: response, status: 540, message: "Sem planos em andamento" });
                 }
             } catch (error) {
-                return res.json({data:error, status: 400,message:"Não foi possivel carregar os cpf"});
+                return res.json({ data: error, status: 400, message: "Não foi possivel carregar os planos em andamento" });
             }
         });
     },
