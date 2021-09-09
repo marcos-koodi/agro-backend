@@ -1280,12 +1280,12 @@ module.exports = {
                 .update('senha', senha).where('email', '=', email);
 
                 if(response){
-                    return res.send(<h3>Senha alterada com sucesso!</h3>);
+                    return res.send('<h3>Senha alterada com sucesso!</h3>');
                 }else{
-                    return res.send(<h3>Erro ao alterar senha!</h3>);
+                    return res.send('<h3>Erro ao alterar senha!</h3>');
                 }
             } catch (error) {
-                return res.send(<h3>Não foi possivel alterar a senha.</h3>);
+                return res.send('<h3>Não foi possivel alterar a senha.</h3>');
             }
         });
     },
