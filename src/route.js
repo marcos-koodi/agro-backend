@@ -35,7 +35,7 @@ route.post('/valida_token_recuperacao',UserController.valida_token_recuperacao);
 route.post('/listaPlntaJBS', UserController.listaPlntaJBS);
 route.post('/getExpansionista', UserController.getExpansionista);
 route.post('/setUserIdNotification', UserController.id_user_notification);
-
+route.post('/altera_recuperacao_senha',UserController.altera_recuperacao_senha);
 
 
 
