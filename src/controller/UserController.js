@@ -139,7 +139,7 @@ module.exports = {
         jwt.verify(token, process.env.SECRET, async function(err, decoded) {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
-                let response = await knex.select('*').from('servicos').where('status', 1);
+                let response = await knex.select('*').from('servicos').where('status', 1).orderBy('nome');
                 
                 for(let i = 0; i < response.length ; i++){
                     const base64 = String.fromCharCode.apply(null, new Uint16Array(response[i].icone));
@@ -154,7 +154,8 @@ module.exports = {
                         console.log(error)
                     }*/
                 }
-                let listServico = [];
+                    
+                /*let listServico = [];
 
                 response.forEach(function(item, index){
                   if(item.id == 14 || item.id == 3){
@@ -163,7 +164,7 @@ module.exports = {
                   }
                 });
                 
-                response = listServico.concat(response);
+                response = listServico.concat(response);*/
 
                return res.json({data:response, status: 200,message:"Carregando servicos"});
             } catch (error) {
@@ -172,7 +173,7 @@ module.exports = {
         });
     },
 
-    async getSlider(req, res){
+    async getSliderPrincipal(req, res){
         const token = req.headers['x-access-token'];
         if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
     
@@ -180,17 +181,12 @@ module.exports = {
           if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
             try {
                 var slider = [];
-                const response = await knex.select('*').from('slider_principal');
+                const response = await knex.select('*').from('slider');
                 if(response.length > 0){
-                    if(response[0]['img_1'] !== null && response[0]['img_1']){
-                        convertB64(response[0]['img_1']);
-                    }
-                    if(response[0]['img_2'] !== null && response[0]['img_2']){
-                        convertB64(response[0]['img_2']);
-                    }
-                    if(response[0]['img_3'] !== null && response[0]['img_3']){
-                        convertB64(response[0]['img_3']);
-                    }
+                    response.forEach(async(slide)=>{
+                        await convertB64(slide.img);
+                    });
+
                     function convertB64(img) {
                         try {
                             let imagem = new Uint8Array(img).reduce(function (data, byte) {
@@ -210,6 +206,43 @@ module.exports = {
 
             } catch (error) {
                 return res.json({data:error, status: 400,message:"Não foi possivel carregar os slides"});
+            }
+        });
+    },
+
+    async getSliderLink(req, res) {
+        const token = req.headers['x-access-token'];
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function (err, decoded) {
+            if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                var response = await knex.select('*').from('slider');
+                if (response.length > 0) {
+
+                    for (let i = 0; i < response.length; i++) {
+                        response[i].img = await convertB64(response[i]['img']);
+                    }
+
+                    function convertB64(img) {
+                        try {
+                            let imagem = new Uint8Array(img).reduce(function (data, byte) {
+                                return data + String.fromCharCode(byte);
+                            }, '');
+                            return imagem;
+                        } catch (error) {
+                            console.log(error);
+                            return '';
+                        }
+                    }
+
+                    return res.json({ data: response, status: 200, message: "Carregando slides" });
+                } else {
+                    return res.json({ data: response, status: 500, message: "Não tem slides disponiveis." });
+                }
+
+            } catch (error) {
+                return res.json({ data: error, status: 400, message: "Não foi possivel carregar os slides" });
             }
         });
     },
@@ -623,6 +656,42 @@ module.exports = {
         });
     },
 
+    async deleteDocumentos(req, res){
+        const token = req.headers['x-access-token'];
+        const { id_doc, tipo } = req.body;
+
+        if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
+
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+          if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+            try {
+                if(tipo == 1){
+                    console.log("Tabela tipo 1");
+                    const response = await knex('documentos_cliente')
+                    .where('id', id_doc).del();
+    
+                    // const response = await knex.select('*').from('documentos_cliente')
+                    // .where('id', id_doc);
+
+                }else if(tipo == 0){
+                    console.log("Tabela tipo 0");
+                    // documentos_cliente_servico_etapa
+
+                    const response = await knex('documentos_cliente_servico_etapa')
+                    .where('id', id_doc).del();
+
+                    // const response = await knex.select('*').from('documentos_cliente_servico_etapa')
+                    // .where('id', id_doc);
+                    // arquivo = response[0]['documento'];
+                }
+
+                return res.json({data:response, status: 200,message:"Documento excluido com sucesso."});
+            } catch (error) {
+                return res.json({data:error, status: 400,message:"Não foi possivel excluir o documento."});
+            };
+        });
+    },
+
     async docVisita(req,res){
         const token = req.headers['x-access-token'];
 
@@ -945,10 +1014,10 @@ module.exports = {
                             .from('cliente_servico_etapa').where('id_cliente_servico', id_cliente_servico).where('status', 1);
                             
                         if (responseStatus.length > 0) {
-                            response[i]['etapa'] = "Em andamento"
+                            response[i]['etapa'] = "Em andamento";
                             response[i]['status'] = 1;
                         } else {
-                            response[i]['etapa'] = "Finalizado"
+                            response[i]['etapa'] = "Finalizado";
                             response[i]['status'] = 2;
                         }
 
@@ -1285,25 +1354,6 @@ module.exports = {
             }
         });
     },
-    async altera_recuperacao_senha(req, res){
-        const token = req.headers['x-access-token'];
-        const { email, senha } = req.body;
-        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
-            if (err) return res.send('<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.');
-            try {
-                const response = await knex('user_cliente')
-                .update('senha', senha).where('email', '=', email);
-
-                if(response){
-                    return res.send('<h3>Senha alterada com sucesso!</h3>');
-                }else{
-                    return res.send('<h3>Erro ao alterar senha!</h3>');
-                }
-            } catch (error) {
-                return res.send('<h3>Não foi possivel alterar a senha.</h3>');
-            }
-        });
-    },
 
     async valida_token_recuperacao(req, res){
         const { token, email } = req.body;
@@ -1314,16 +1364,16 @@ module.exports = {
             if(response.length > 0){
 
                 jwt.verify(token, process.env.SECRET, async function(err, decoded) {
-                    if (err) return res.send('<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.');
-
+                    if (err) return res.send(`<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.`);
+                    
 
                     return res.send(`
                     <form class="user" id="form-login" action="" style="margin-top: 20px;">
                         <div class="form-group">
-                        <input type="password" class="form-control form-control-user"  name="senha1" placeholder="nova senha">
+                        <input type="password" class="form-control form-control-user" id="senha1" name="senha1" placeholder="nova senha">
                         </div>
                         <div class="form-group" style="display:flex">
-                        <input type="password" class="form-control form-control-user" placeholder="confirmacao de senha" name="senha2">
+                        <input type="password" class="form-control form-control-user" id="senha2" placeholder="confirmacao de senha" name="senha2">
                     
                         </div>
                         <button onclick="recuperar_senha()" id="loginButton" class="btn btn-user btn-block">
@@ -1333,13 +1383,35 @@ module.exports = {
                     `)
                 });
 
-
+                
             }else{
                 return res.send('Recuperação de senha invalida!!! <br> Solicite a recuperação de senha pelo APP.');
             }
         } catch (error) {
             return res.json(error);
         }
+    },
+
+    async altera_recuperacao_senha(req, res){
+        const token = req.headers['x-access-token'];
+        const { email, senha } = req.body;
+        jwt.verify(token, process.env.SECRET, async function(err, decoded) {
+            if (err) return res.send(`<h3>Sua sessão expirou!!!</h3> <br> Solicite uma nova redefinição de senha.`);
+            
+
+            try {
+                const response = await knex('user_cliente')
+                .update('senha', senha).where('email', '=', email);
+                
+                if(response){
+                    return res.send(`<h3>Senha alterada com sucesso!</h3>`);
+                }else{
+                    return res.send(`<h3>Erro ao alterar senha!</h3>`);
+                }
+            } catch (error) {
+                return res.send(`<h3>Não foi possivel alterar a senha.</h3>`);
+            }
+        });
     },
 
     async id_user_notification(req, res){
