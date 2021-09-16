@@ -9,7 +9,8 @@ route.post('/cadastro', UserController.create);
 route.post('/getConsorcios', UserController.getConsorcios);
 route.post('/getImagemConsorcio', UserController.getImagemConsorcio);
 route.post('/getServicos', UserController.getServicos);
-route.post('/getSlider', UserController.getSlider);
+route.post('/getSlider', UserController.getSliderPrincipal);
+route.post('/getSliderLink', UserController.getSliderLink);
 route.post('/isCpf', UserController.isCpf);
 route.post('/listaDocs', UserController.listaDocsCli);
 route.post('/cadServico', UserController.cadServico);
@@ -28,14 +29,16 @@ route.post('/updateTell', UserController.updateTell);
 route.post('/updateSenha', UserController.updateSenha);
 route.post('/getAvatar', UserController.getAvatar);
 route.post('/downloadArquivos', UserController.downloadArquivos);
+route.post('/dellDocumentos', UserController.deleteDocumentos);
 route.post('/updateAvatar', UserController.updateAvatar);
 route.post('/orcamentosJBS', UserController.orcamentosJBS);
 route.post('/recuperacaoSenha', UserController.recuperacao_senha);
 route.post('/valida_token_recuperacao',UserController.valida_token_recuperacao);
+route.post('/altera_recuperacao_senha',UserController.altera_recuperacao_senha);
 route.post('/listaPlntaJBS', UserController.listaPlntaJBS);
 route.post('/getExpansionista', UserController.getExpansionista);
 route.post('/setUserIdNotification', UserController.id_user_notification);
-route.post('/altera_recuperacao_senha',UserController.altera_recuperacao_senha);
+
 
 
 
