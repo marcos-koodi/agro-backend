@@ -13,14 +13,17 @@ route.post('/getSlider', UserController.getSliderPrincipal);
 route.post('/getSliderLink', UserController.getSliderLink);
 route.post('/isCpf', UserController.isCpf);
 route.post('/listaDocs', UserController.listaDocsCli);
+route.post('/listaDocsEtpDocsCli', UserController.listaDocsEtpDocsCli);//Nova substituindo
 route.post('/cadServico', UserController.cadServico);
 route.post('/listEtapa', UserController.listEtapa);
 route.post('/cadDocCliente', UserController.cadDocCliente);
 route.post('/listDocPropriedade', UserController.listDocPropriedade);
+route.post('/listDocEtapaPropriedade', UserController.listDocEtapaPropriedade);//Nova Substituindo anterior
 route.post('/dadosProcessoEtapa', UserController.dadosProcessoEtapa);
 route.post('/docVisita', UserController.docVisita);
 route.post('/docLaudo', UserController.docLaudo);
 route.post('/seusPlanos', UserController.seusPlanos);
+route.post('/isCadServico', UserController.isCadServico);
 route.post('/listaEndereco', UserController.listaEndereco);
 route.post('/addEndereco', UserController.addEndereco);
 route.post('/deleteEndereco', UserController.deleteEndereco);
